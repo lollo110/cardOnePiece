@@ -1,0 +1,127 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Recherche One Piece{% endblock %}
+
+{% block body %}
+<section class="search-section">
+    <h1>Collection One Piece</h1>
+
+    <form method="get" class="search-form" id="collection-options">
+        <input type="hidden" name="q" value="{{ query }}">
+        <select name="sort" aria-label="Sort cards">
+            <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>Relevance</option>
+            <option value="price_highest" {% if sort == 'price_highest' %}selected{% endif %}>Price high</option>
+            <option value="price_lowest" {% if sort == 'price_lowest' %}selected{% endif %}>Price low</option>
+        </select>
+        <button>Rechercher</button>
+    </form>
+</section>
+
+{% if error %}
+    <p class="message">{{ error }}</p>
+{% endif %}
+
+{% if query and results is empty and not error %}
+    <p class="message">Aucune carte trouvee.</p>
+{% endif %}
+
+{% if results is not empty %}
+    <section class="collection-tools">
+        <p>{{ totalResults }} cartes - page {{ paging.current }} / {{ paging.total }}</p>
+
+        <div class="filter-form">
+            <label>
+                Color
+                <select data-card-filter="color">
+                    <option value="">All colors</option>
+                    <option value="Black">Black</option>
+                    <option value="Blue">Blue</option>
+                    <option value="Green">Green</option>
+                    <option value="Purple">Purple</option>
+                    <option value="Red">Red</option>
+                    <option value="Yellow">Yellow</option>
+                </select>
+            </label>
+
+            <label>
+                Rarity
+                <select data-card-filter="rarity">
+                    <option value="">All rarities</option>
+                    <option value="C">C</option>
+                    <option value="UC">UC</option>
+                    <option value="R">R</option>
+                    <option value="SR">SR</option>
+                    <option value="SEC">SEC</option>
+                    <option value="LEADER">LEADER</option>
+                    <option value="SP CARD">SP CARD</option>
+                </select>
+            </label>
+
+            <button type="button" data-card-filter-reset>Reset filters</button>
+        </div>
+    </section>
+{% endif %}
+
+<section class="card-grid" data-card-grid>
+    {% for card in results %}
+        <article class="card-item" data-color="{{ card.color ?? '' }}" data-rarity="{{ card.rarity ?? '' }}">
+            {% if card.image is defined and card.image %}
+                <img class="card-image" src="{{ card.image }}" alt="{{ card.name_numbered ?? card.name }}" loading="lazy">
+            {% endif %}
+
+            <div class="card-content">
+                <h2>
+                    <a href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">
+                        {{ card.name_numbered ?? card.name }}
+                    </a>
+                </h2>
+
+                {% if card.episode.name is defined %}
+                    <p>{{ card.episode.name }}</p>
+                {% endif %}
+
+                <div class="card-tags">
+                    {% if card.color is defined and card.color %}
+                        <span>{{ card.color }}</span>
+                    {% endif %}
+
+                    {% if card.rarity is defined and card.rarity %}
+                        <span>{{ card.rarity }}</span>
+                    {% endif %}
+                </div>
+
+                {% if card.prices.cardmarket is defined %}
+                    <p>Low: {{ card.prices.cardmarket.lowest_near_mint ?? 'N/A' }} EUR</p>
+                    <p>7j avg: {{ card.prices.cardmarket['7d_average'] ?? 'N/A' }} EUR</p>
+                {% endif %}
+
+                <a class="card-detail-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">Details</a>
+            </div>
+        </article>
+    {% endfor %}
+</section>
+
+{% if paging.total > 1 %}
+    <nav class="pagination" aria-label="Collection pages">
+        {% set pageParams = { q: query, sort: sort } %}
+
+        {% if paging.current > 1 %}
+            <a href="{{ path('cards', pageParams|merge({ page: 1 })) }}">First</a>
+            <a href="{{ path('cards', pageParams|merge({ page: paging.current - 1 })) }}">Previous</a>
+        {% else %}
+            <span>First</span>
+            <span>Previous</span>
+        {% endif %}
+
+        <span>Page {{ paging.current }} of {{ paging.total }}</span>
+
+        {% if paging.current < paging.total %}
+            <a href="{{ path('cards', pageParams|merge({ page: paging.current + 1 })) }}">Next</a>
+            <a href="{{ path('cards', pageParams|merge({ page: paging.total })) }}">Last</a>
+        {% else %}
+            <span>Next</span>
+            <span>Last</span>
+        {% endif %}
+    </nav>
+{% endif %}
+{% endblock %}

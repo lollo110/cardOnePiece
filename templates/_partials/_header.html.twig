@@ -1,0 +1,18 @@
+<header class="site-header">
+    <a class="site-logo" href="{{ path('app_home') }}">One Piece Card Game</a>
+
+    <nav class="site-nav">
+        <a href="{{ path('app_home') }}">Home</a>
+        <a href="{{ path('cards') }}">Collection</a>
+        <a href="{{ path('market') }}">Market</a>
+        <a href="{{ path('blog') }}">Blog</a>
+    </nav>
+
+    <form method="get" action="{{ path('cards') }}" class="header-search">
+        <div class="search-autocomplete">
+            <input type="text" name="q" value="{{ app.request.query.get('q') }}" placeholder="Search a card" autocomplete="off" data-suggest-url="{{ path('cards_suggestions') }}" data-search-input>
+            <div class="suggestions" data-suggestions hidden></div>
+        </div>
+        <button>Search</button>
+    </form>
+</header>

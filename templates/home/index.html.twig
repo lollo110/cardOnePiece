@@ -1,0 +1,95 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}One Piece Card Game{% endblock %}
+
+{% block body %}
+<section class="home-hero">
+    <p class="eyebrow">One Piece Card Game</p>
+    <h1>Find cards, compare prices, follow the market.</h1>
+    <p>Search from the header or open the collection to browse every page.</p>
+</section>
+
+{% if error %}
+    <p class="message">{{ error }}</p>
+{% endif %}
+
+<section class="home-section">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Market movers</p>
+            <h2>Biggest moves by percentage</h2>
+        </div>
+        <a href="{{ path('market') }}">Open market page</a>
+    </div>
+
+    <div class="market-preview">
+        <article class="detail-panel">
+            <h3>Rising</h3>
+            {% for card in risingCards %}
+                <a class="mover-row" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">
+                    <span>{{ card.name_numbered ?? card.name }}</span>
+                    <strong class="positive">+{{ card.movement_percent }}%</strong>
+                </a>
+            {% else %}
+                <p class="muted">No rising cards available.</p>
+            {% endfor %}
+        </article>
+
+        <article class="detail-panel">
+            <h3>Falling</h3>
+            {% for card in fallingCards %}
+                <a class="mover-row" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">
+                    <span>{{ card.name_numbered ?? card.name }}</span>
+                    <strong class="negative">{{ card.movement_percent }}%</strong>
+                </a>
+            {% else %}
+                <p class="muted">No falling cards available.</p>
+            {% endfor %}
+        </article>
+    </div>
+</section>
+
+<section class="home-section">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Trending</p>
+            <h2>High price cards right now</h2>
+        </div>
+        <a href="{{ path('cards', { sort: 'price_highest' }) }}">View collection</a>
+    </div>
+
+    <section class="card-grid" data-card-grid>
+        {% for card in trendingCards %}
+            <article class="card-item" data-color="{{ card.color ?? '' }}" data-rarity="{{ card.rarity ?? '' }}">
+                {% if card.image is defined and card.image %}
+                    <img class="card-image" src="{{ card.image }}" alt="{{ card.name_numbered ?? card.name }}" loading="lazy">
+                {% endif %}
+
+                <div class="card-content">
+                    <h2>
+                        <a href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">
+                            {{ card.name_numbered ?? card.name }}
+                        </a>
+                    </h2>
+
+                    {% if card.episode.name is defined %}
+                        <p>{{ card.episode.name }}</p>
+                    {% endif %}
+
+                    <div class="card-tags">
+                        {% if card.color is defined and card.color %}<span>{{ card.color }}</span>{% endif %}
+                        {% if card.rarity is defined and card.rarity %}<span>{{ card.rarity }}</span>{% endif %}
+                    </div>
+
+                    {% if card.prices.cardmarket is defined %}
+                        <p>Low: {{ card.prices.cardmarket.lowest_near_mint ?? 'N/A' }} EUR</p>
+                        <p>30d avg: {{ card.prices.cardmarket['30d_average'] ?? 'N/A' }} EUR</p>
+                    {% endif %}
+
+                    <a class="card-detail-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">Details</a>
+                </div>
+            </article>
+        {% endfor %}
+    </section>
+</section>
+{% endblock %}

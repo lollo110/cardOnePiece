@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Market movers{% endblock %}
+
+{% block body %}
+<section class="home-hero">
+    <p class="eyebrow">Market</p>
+    <h1>Cards rising and falling the most by percentage.</h1>
+    <p>Movement compares current lowest near mint against the 30-day average from the API.</p>
+</section>
+
+<section class="market-columns">
+    <article class="detail-panel">
+        <h2>Rising</h2>
+        {% for card in marketMovers.rising %}
+            <a class="mover-row" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">
+                <span>{{ card.name_numbered ?? card.name }}</span>
+                <strong class="positive">+{{ card.movement_percent }}%</strong>
+            </a>
+        {% else %}
+            <p class="muted">No rising cards available.</p>
+        {% endfor %}
+    </article>
+
+    <article class="detail-panel">
+        <h2>Falling</h2>
+        {% for card in marketMovers.falling %}
+            <a class="mover-row" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">
+                <span>{{ card.name_numbered ?? card.name }}</span>
+                <strong class="negative">{{ card.movement_percent }}%</strong>
+            </a>
+        {% else %}
+            <p class="muted">No falling cards available.</p>
+        {% endfor %}
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'base.html.twig' %}
+
+{% macro render_value(value) %}
+    {% import _self as cardMacros %}
+
+    {% if value is iterable %}
+        <dl class="detail-list nested-list">
+            {% for key, nestedValue in value %}
+                <div>
+                    <dt>{{ key|replace({'_': ' '})|title }}</dt>
+                    <dd>{{ cardMacros.render_value(nestedValue) }}</dd>
+                </div>
+            {% endfor %}
+        </dl>
+    {% elseif value is same as(null) %}
+        <span class="muted">N/A</span>
+    {% elseif value is same as(true) or value is same as(false) %}
+        {{ value ? 'Yes' : 'No' }}
+    {% else %}
+        {{ value }}
+    {% endif %}
+{% endmacro %}
+
+{% import _self as cardMacros %}
+
+{% block title %}{{ card.name_numbered ?? card.name }}{% endblock %}
+
+{% block body %}
+<a class="back-link" href="{{ path('cards') }}">Back to collection</a>
+
+<section class="detail-hero">
+    <div>
+        {% if card.image is defined and card.image %}
+            <img class="detail-image" src="{{ card.image }}" alt="{{ card.name_numbered ?? card.name }}">
+        {% endif %}
+    </div>
+
+    <div class="detail-summary">
+        <p class="eyebrow">{{ card.episode.name ?? 'One Piece' }}</p>
+        <h1>{{ card.name_numbered ?? card.name }}</h1>
+
+        <div class="card-tags">
+            {% if card.color is defined and card.color %}<span>{{ card.color }}</span>{% endif %}
+            {% if card.rarity is defined and card.rarity %}<span>{{ card.rarity }}</span>{% endif %}
+            {% if card.type is defined and card.type %}<span>{{ card.type }}</span>{% endif %}
+            {% if card.card_number is defined and card.card_number %}<span>{{ card.card_number }}</span>{% endif %}
+        </div>
+
+        <dl class="detail-list">
+            <div><dt>Name</dt><dd>{{ card.name ?? 'N/A' }}</dd></div>
+            <div><dt>Card number</dt><dd>{{ card.card_number ?? 'N/A' }}</dd></div>
+            <div><dt>HP</dt><dd>{{ card.hp ?? 'N/A' }}</dd></div>
+            <div><dt>Artist</dt><dd>{{ card.artist.name ?? 'N/A' }}</dd></div>
+            <div><dt>Release</dt><dd>{{ card.episode.released_at ?? 'N/A' }}</dd></div>
+        </dl>
+
+        {% if card.links is defined or card.tcggo_url is defined %}
+            <div class="external-links">
+                {% if card.tcggo_url is defined and card.tcggo_url %}<a href="{{ card.tcggo_url }}" target="_blank" rel="noreferrer">TCGGO</a>{% endif %}
+                {% if card.links.cardmarket is defined %}<a href="{{ card.links.cardmarket }}" target="_blank" rel="noreferrer">Cardmarket</a>{% endif %}
+                {% if card.links.tcgplayer is defined %}<a href="{{ card.links.tcgplayer }}" target="_blank" rel="noreferrer">TCGPlayer</a>{% endif %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="detail-panel">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">Prices</p>
+            <h2>Price graph</h2>
+        </div>
+
+        <label>
+            Language / market
+            <select data-price-language data-price-url="{{ path('card_prices', { id: card.id, name: card.name_numbered ?? card.name }) }}">
+                {% for key, label in languageOptions %}
+                    <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+
+    <p class="muted" data-price-message>
+        {% if not initialPriceChart.available %}
+            {{ initialPriceChart.message }}
+        {% else %}
+            Market-style view from the price fields exposed by the API.
+        {% endif %}
+    </p>
+
+    <div class="market-chart" data-market-chart data-initial-chart="{{ initialPriceChart|json_encode|e('html_attr') }}">
+        <svg viewBox="0 0 640 260" role="img" aria-label="Price chart">
+            <line x1="44" y1="20" x2="44" y2="220"></line>
+            <line x1="44" y1="220" x2="620" y2="220"></line>
+            <polyline points="" data-chart-line></polyline>
+            <g data-chart-points></g>
+        </svg>
+        <div class="chart-labels" data-chart-labels></div>
+    </div>
+</section>
+
+<section class="detail-panel comments-panel" data-comments-scope="card-{{ card.id }}">
+    <h2>Comments</h2>
+    <p class="muted">Comments are saved locally in this browser for now.</p>
+
+    <form class="comment-form" data-card-comment-form>
+        <label>
+            Your comment
+            <textarea rows="4" placeholder="Share a note about {{ card.name_numbered ?? card.name }}"></textarea>
+        </label>
+        <button type="submit">Post comment</button>
+    </form>
+
+    <div class="comment-list" data-card-comments></div>
+</section>
+
+<section class="detail-grid">
+    <article class="detail-panel">
+        <h2>Card information</h2>
+        <dl class="detail-list">
+            {% for key, value in card %}
+                {% if key not in ['prices', 'episode', 'artist', 'links'] %}
+                    <div>
+                        <dt>{{ key|replace({'_': ' '})|title }}</dt>
+                        <dd>{{ cardMacros.render_value(value) }}</dd>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </dl>
+    </article>
+
+    <article class="detail-panel">
+        <h2>Set / episode</h2>
+        {{ cardMacros.render_value(card.episode ?? {}) }}
+    </article>
+
+    <article class="detail-panel">
+        <h2>Artist</h2>
+        {{ cardMacros.render_value(card.artist ?? {}) }}
+    </article>
+
+    <article class="detail-panel">
+        <h2>All price data</h2>
+        {{ cardMacros.render_value(card.prices ?? {}) }}
+    </article>
+</section>
+{% endblock %}
