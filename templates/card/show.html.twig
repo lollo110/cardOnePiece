@@ -64,6 +64,21 @@
     </div>
 </section>
 
+<section class="detail-panel comments-panel" data-comments-scope="card-{{ card.id }}">
+    <h2>Comments</h2>
+    <p class="muted">Comments are saved locally in this browser for now.</p>
+
+    <form class="comment-form" data-card-comment-form>
+        <label>
+            Your comment
+            <textarea rows="4" placeholder="Share a note about {{ card.name_numbered ?? card.name }}"></textarea>
+        </label>
+        <button type="submit">Post comment</button>
+    </form>
+
+    <div class="comment-list" data-card-comments></div>
+</section>
+
 <section class="detail-panel">
     <div class="panel-heading">
         <div>
@@ -85,7 +100,7 @@
         {% if not initialPriceChart.available %}
             {{ initialPriceChart.message }}
         {% else %}
-            Market-style view from the price fields exposed by the API.
+            Daily price history from the API sync.
         {% endif %}
     </p>
 
@@ -98,21 +113,6 @@
         </svg>
         <div class="chart-labels" data-chart-labels></div>
     </div>
-</section>
-
-<section class="detail-panel comments-panel" data-comments-scope="card-{{ card.id }}">
-    <h2>Comments</h2>
-    <p class="muted">Comments are saved locally in this browser for now.</p>
-
-    <form class="comment-form" data-card-comment-form>
-        <label>
-            Your comment
-            <textarea rows="4" placeholder="Share a note about {{ card.name_numbered ?? card.name }}"></textarea>
-        </label>
-        <button type="submit">Post comment</button>
-    </form>
-
-    <div class="comment-list" data-card-comments></div>
 </section>
 
 <section class="detail-grid">

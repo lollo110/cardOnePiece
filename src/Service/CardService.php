@@ -2,6 +2,13 @@
 
 namespace App\Service;
 
+use App\Entity\Card;
+use App\Entity\CardPrice;
+use App\Entity\CardPriceHistory;
+use App\Repository\CardPriceHistoryRepository;
+use App\Repository\CardPriceRepository;
+use App\Repository\CardRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -14,44 +21,35 @@ class CardService
         'X-RapidAPI-Host' => 'cardmarket-api-tcg.p.rapidapi.com',
     ];
 
-    private HttpClientInterface $client;
-
-    public function __construct(HttpClientInterface $client)
-    {
-        $this->client = $client;
+    public function __construct(
+        private readonly HttpClientInterface $client,
+        private readonly CardRepository $cardRepository,
+        private readonly CardPriceRepository $cardPriceRepository,
+        private readonly CardPriceHistoryRepository $cardPriceHistoryRepository,
+        private readonly CardTraderPriceService $cardTraderPriceService,
+        private readonly EntityManagerInterface $entityManager,
+    ) {
     }
 
     public function searchCards(?string $query = null, int $page = 1, string $sort = 'relevance'): array
     {
-        try {
-            $query = trim((string) $query);
+        $query = trim((string) $query);
+        $page = max(1, $page);
+        $perPage = 20;
+        $sort = $this->normalizeSort($sort);
+        $totalResults = $this->cardRepository->countSearch($query !== '' ? $query : null);
+        $cards = $this->cardRepository->searchPage($query !== '' ? $query : null, $page, $perPage, $sort);
 
-            if ($query === '') {
-                return $this->fetchCards(null, $page, $sort);
-            }
-
-            $bestResponse = null;
-            $bestScore = PHP_INT_MIN;
-
-            foreach ($this->buildSearchQueries($query) as $searchQuery) {
-                $response = $this->fetchCards($searchQuery, $page, $sort);
-
-                if ($response['error']) {
-                    continue;
-                }
-
-                $score = $this->scoreSearchResponse($query, $response);
-
-                if ($score > $bestScore) {
-                    $bestResponse = $response;
-                    $bestScore = $score;
-                }
-            }
-
-            return $bestResponse ?? $this->emptyResponse('The card API is unavailable right now. Please try again later.');
-        } catch (TransportExceptionInterface|DecodingExceptionInterface) {
-            return $this->emptyResponse('The card API is unavailable right now. Please try again later.');
-        }
+        return [
+            'data' => array_map(fn (Card $card) => $this->cardToArray($card), $cards),
+            'paging' => [
+                'current' => $page,
+                'total' => max(1, (int) ceil($totalResults / $perPage)),
+                'per_page' => $perPage,
+            ],
+            'results' => $totalResults,
+            'error' => null,
+        ];
     }
 
     public function suggestCards(string $query): array
@@ -62,30 +60,20 @@ class CardService
             return $suggestions;
         }
 
-        $response = $this->fetchCards($query, 1, 'relevance');
-        $suggestions = [];
-
-        foreach ($response['data'] ?? [] as $card) {
-            if (!isset($card['name']) || in_array($card['name'], $suggestions, true)) {
-                continue;
-            }
-
-            $suggestions[] = $card['name'];
-
-            if (count($suggestions) >= 8) {
-                break;
-            }
-        }
-
-        return $suggestions;
+        return $this->cardRepository->findSuggestions($query);
     }
 
     public function trendingCards(): array
     {
-        return $this->fetchCards(null, 1, 'price_highest');
+        return $this->searchCards(null, 1, 'price_highest');
     }
 
     public function collectionPage(int $page = 1, string $sort = 'relevance'): array
+    {
+        return $this->searchCards(null, $page, $sort);
+    }
+
+    public function apiCollectionPage(int $page = 1, string $sort = 'relevance'): array
     {
         return $this->fetchCards(null, $page, $sort);
     }
@@ -95,8 +83,12 @@ class CardService
         $cards = [];
 
         for ($page = 1; $page <= $pages; $page++) {
-            $response = $this->fetchCards(null, $page, 'price_highest');
+            $response = $this->searchCards(null, $page, 'price_highest');
             $cards = array_merge($cards, $response['data'] ?? []);
+
+            if ($page >= (int) ($response['paging']['total'] ?? 1)) {
+                break;
+            }
         }
 
         $cardsById = [];
@@ -132,29 +124,9 @@ class CardService
 
     public function findCard(int $id, ?string $searchHint = null): ?array
     {
-        $queries = array_values(array_unique(array_filter([
-            $searchHint ? trim($searchHint) : null,
-            $searchHint ? preg_replace('/\s+[A-Z]{2}\d{2}-\d{3}.*$/', '', trim($searchHint)) : null,
-        ])));
+        $card = $this->cardRepository->findApiIdWithRelations($id);
 
-        foreach ($queries as $query) {
-            for ($page = 1; $page <= 5; $page++) {
-                $response = $this->fetchCards($query, $page, 'relevance');
-
-                foreach ($response['data'] ?? [] as $card) {
-                    if ((int) ($card['id'] ?? 0) === $id) {
-                        return $card;
-                    }
-                }
-
-                $paging = $response['paging'] ?? [];
-                if ($page >= (int) ($paging['total'] ?? 1)) {
-                    break;
-                }
-            }
-        }
-
-        return null;
+        return $card ? $this->cardToArray($card) : null;
     }
 
     public function priceChart(array $card): array
@@ -178,31 +150,30 @@ class CardService
             'points' => [],
         ];
 
-        $points = match ($language) {
-            'all' => [
-                ['label' => '30d avg', 'value' => $cardmarket['30d_average'] ?? null],
-                ['label' => '7d avg', 'value' => $cardmarket['7d_average'] ?? null],
-                ['label' => 'Lowest NM', 'value' => $cardmarket['lowest_near_mint'] ?? null],
-                ['label' => 'TCGPlayer', 'value' => $tcgPlayer['market_price'] ?? null],
-            ],
-            'eu' => [
-                ['label' => '30d avg', 'value' => $cardmarket['30d_average'] ?? null],
-                ['label' => '7d avg', 'value' => $cardmarket['7d_average'] ?? null],
-                ['label' => 'Lowest NM EU', 'value' => $cardmarket['lowest_near_mint_EU_only'] ?? null],
-            ],
-            'fr' => [
-                ['label' => '30d avg', 'value' => $cardmarket['30d_average'] ?? null],
-                ['label' => '7d avg', 'value' => $cardmarket['7d_average'] ?? null],
-                ['label' => 'Lowest NM FR', 'value' => $cardmarket['lowest_near_mint_FR'] ?? null],
-                ['label' => 'Lowest NM FR EU', 'value' => $cardmarket['lowest_near_mint_FR_EU_only'] ?? null],
-            ],
-            default => [],
-        };
+        $cardEntity = $this->cardRepository->findOneBy(['apiId' => (int) ($card['id'] ?? 0)]);
+        $historyRows = $cardEntity ? $this->cardPriceHistoryRepository->findForCard($cardEntity, 30) : [];
+        $points = array_values(array_filter(array_map(
+            fn (CardPriceHistory $history) => $this->historyPoint($history, $language),
+            $historyRows
+        )));
+
+        if ($points === [] && $cardEntity && in_array($language, ['fr', 'jp', 'cn', 'kr'], true)) {
+            $externalPoint = $this->externalLanguagePoint($cardEntity, $language);
+            if ($externalPoint) {
+                $points = [$externalPoint];
+            }
+        }
+
+        if ($points === []) {
+            $points = $this->fallbackCurrentPricePoints($card, $language);
+        }
+
+        $points = array_values(array_filter($points, static fn (array $point) => $point['value'] !== null));
 
         if ($points === []) {
             return array_merge($chart, [
                 'available' => false,
-                'message' => 'No ' . $chart['label'] . ' price data is exposed by the API for this card.',
+                'message' => 'No ' . $chart['label'] . ' price history is available for this card yet.',
                 'points' => [],
             ]);
         }
@@ -216,7 +187,7 @@ class CardService
     public function languageOptions(): array
     {
         return [
-            'all' => 'All languages',
+            'all' => 'English / market',
             'eu' => 'EU only',
             'fr' => 'French',
             'jp' => 'Japanese',
@@ -243,6 +214,136 @@ class CardService
         return round((((float) $current - (float) $baseline) / (float) $baseline) * 100, 2);
     }
 
+    private function historyPoint(CardPriceHistory $history, string $language): ?array
+    {
+        $value = match ($language) {
+            'all' => $history->getLowestNearMint(),
+            'eu' => $history->getLowestNearMintEuOnly(),
+            'fr' => $history->getLanguagePrice('fr') ?? $history->getLowestNearMintFr() ?? $history->getLowestNearMintFrEuOnly(),
+            'jp', 'cn', 'kr' => $history->getLanguagePrice($language),
+            default => null,
+        };
+
+        if ($value === null) {
+            return null;
+        }
+
+        return [
+            'label' => $history->getCapturedOn()->format('Y-m-d'),
+            'value' => $value,
+        ];
+    }
+
+    private function externalLanguagePoint(Card $card, string $language): ?array
+    {
+        $price = $this->cardTraderPriceService->lowestNearMintForLanguage($card, $language);
+
+        if (!$price) {
+            return null;
+        }
+
+        $capturedOn = new \DateTimeImmutable('today');
+        $history = $this->cardPriceHistoryRepository->findOneBy([
+            'card' => $card,
+            'capturedOn' => $capturedOn,
+        ]) ?? new CardPriceHistory();
+        $history
+            ->setCard($card)
+            ->setCapturedOn($capturedOn)
+            ->setCurrency($price['currency'] ?? 'EUR')
+            ->setLanguagePrice($language, (float) $price['value'], $price['currency'] ?? 'EUR', $price['source'] ?? 'external');
+        $this->entityManager->persist($history);
+        $this->entityManager->flush();
+
+        return [
+            'label' => $capturedOn->format('Y-m-d'),
+            'value' => (float) $price['value'],
+        ];
+    }
+
+    private function fallbackCurrentPricePoints(array $card, string $language): array
+    {
+        $cardmarket = $card['prices']['cardmarket'] ?? [];
+
+        return match ($language) {
+            'all' => [
+                ['label' => 'Current lowest NM', 'value' => $cardmarket['lowest_near_mint'] ?? null],
+            ],
+            'eu' => [
+                ['label' => 'Current lowest NM EU', 'value' => $cardmarket['lowest_near_mint_EU_only'] ?? null],
+            ],
+            'fr' => [
+                ['label' => 'Current lowest NM FR', 'value' => $cardmarket['lowest_near_mint_FR'] ?? $cardmarket['lowest_near_mint_FR_EU_only'] ?? null],
+            ],
+            default => [],
+        };
+    }
+
+    private function cardToArray(Card $card): array
+    {
+        $episode = $card->getEpisode();
+        $artist = $card->getArtist();
+        $price = $this->cardPriceRepository->findOneBy(['card' => $card]);
+
+        return array_merge($card->getRawData() ?? [], [
+            'id' => $card->getApiId(),
+            'episode' => $episode ? [
+                'id' => $episode->getApiId(),
+                'name' => $episode->getName(),
+                'slug' => $episode->getSlug(),
+                'code' => $episode->getCode(),
+                'released_at' => $episode->getReleasedAt()?->format('Y-m-d'),
+                'logo' => $episode->getLogo(),
+            ] : null,
+            'artist' => $artist ? [
+                'id' => $artist->getApiId(),
+                'name' => $artist->getName(),
+                'slug' => $artist->getSlug(),
+            ] : null,
+            'name' => $card->getName(),
+            'name_numbered' => $card->getNameNumbered(),
+            'slug' => $card->getSlug(),
+            'type' => $card->getType(),
+            'card_number' => $card->getCardNumber(),
+            'hp' => $card->getHp(),
+            'rarity' => $card->getRarity(),
+            'color' => $card->getColor(),
+            'version' => $card->getVersion(),
+            'supertype' => $card->getSupertype(),
+            'tcgid' => $card->getTcgid(),
+            'cardmarket_id' => $card->getCardmarketId(),
+            'tcgplayer_id' => $card->getTcgplayerId(),
+            'image' => $card->getImage(),
+            'tcggo_url' => $card->getTcggoUrl(),
+            'links' => $card->getLinks(),
+            'prices' => $this->priceToArray($price),
+            'updated_at' => $card->getUpdatedAt()->format(\DateTimeInterface::ATOM),
+        ]);
+    }
+
+    private function priceToArray(?CardPrice $price): array
+    {
+        if (!$price) {
+            return [];
+        }
+
+        return [
+            'cardmarket' => [
+                'currency' => $price->getCurrency(),
+                'lowest_near_mint' => $price->getLowestNearMint(),
+                'lowest_near_mint_EU_only' => $price->getLowestNearMintEuOnly(),
+                'lowest_near_mint_FR' => $price->getLowestNearMintFr(),
+                'lowest_near_mint_FR_EU_only' => $price->getLowestNearMintFrEuOnly(),
+                '7d_average' => $price->getAverage7d(),
+                '30d_average' => $price->getAverage30d(),
+            ],
+            'tcg_player' => [
+                'currency' => $price->getCurrency(),
+                'market_price' => $price->getTcgplayerMarketPrice(),
+            ],
+        ];
+    }
+
     private function fetchCards(?string $query, int $page, string $sort): array
     {
         $queryParameters = [
@@ -254,20 +355,25 @@ class CardService
             $queryParameters['search'] = $query;
         }
 
-        $response = $this->client->request(
-            'GET',
-            self::API_URL,
-            [
-                'headers' => self::API_HEADERS,
-                'query' => $queryParameters,
-            ]
-        );
+        try {
+            $response = $this->client->request(
+                'GET',
+                self::API_URL,
+                [
+                    'headers' => self::API_HEADERS,
+                    'query' => $queryParameters,
+                ]
+            );
 
-        if ($response->getStatusCode() !== 200) {
+            if ($response->getStatusCode() !== 200) {
+                return $this->emptyResponse('The card API is unavailable right now. Please try again later.');
+            }
+
+            $data = $response->toArray(false);
+        } catch (TransportExceptionInterface|DecodingExceptionInterface) {
             return $this->emptyResponse('The card API is unavailable right now. Please try again later.');
         }
 
-        $data = $response->toArray(false);
         $cards = $data['data'] ?? [];
 
         if (!is_array($cards)) {

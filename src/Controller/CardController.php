@@ -39,18 +39,39 @@ class CardController extends AbstractController
         return $this->render('blog/index.html.twig', [
             'topics' => [
                 [
-                    'title' => 'Meta decks',
-                    'description' => 'Talk about the decks that are shaping the current One Piece Card Game format.',
+                    'title' => 'Trading & prices',
+                    'slug' => 'trading-prices',
+                    'description' => 'Talk about trades, card values, market moves, reprints and collection goals.',
+                    'button' => 'Open trading blog',
                 ],
                 [
-                    'title' => 'Market watch',
-                    'description' => 'Discuss price moves, reprints, sealed products and collector cards.',
-                ],
-                [
-                    'title' => 'Trading corner',
-                    'description' => 'Share trade ideas, collection goals and cards you are hunting.',
+                    'title' => 'Game',
+                    'slug' => 'game',
+                    'description' => 'Talk about decks, matchups, rules, tournaments and the current format.',
+                    'button' => 'Open game blog',
                 ],
             ],
+        ]);
+    }
+
+    #[Route('/blog/{slug}', name: 'blog_topic', requirements: ['slug' => 'trading-prices|game'])]
+    public function blogTopic(string $slug): Response
+    {
+        $topics = [
+            'trading-prices' => [
+                'title' => 'Trading & prices',
+                'slug' => 'trading-prices',
+                'description' => 'Talk about trades, card values, market moves, reprints and collection goals.',
+            ],
+            'game' => [
+                'title' => 'Game',
+                'slug' => 'game',
+                'description' => 'Talk about decks, matchups, rules, tournaments and the current format.',
+            ],
+        ];
+
+        return $this->render('blog/topic.html.twig', [
+            'topic' => $topics[$slug],
         ]);
     }
 

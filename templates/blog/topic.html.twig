@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ topic.title }}{% endblock %}
+
+{% block body %}
+<a class="back-link" href="{{ path('blog') }}">Back to blog</a>
+
+<section class="home-hero">
+    <p class="eyebrow">Blog</p>
+    <h1>{{ topic.title }}</h1>
+    <p>{{ topic.description }}</p>
+</section>
+
+<section class="detail-panel topic-card" data-topic="{{ topic.slug }}">
+    <h2>Discussion</h2>
+
+    <form class="comment-form" data-blog-form>
+        <label>
+            Your message
+            <textarea rows="4" placeholder="Write something about {{ topic.title }}"></textarea>
+        </label>
+        <button type="submit">Post</button>
+    </form>
+
+    <div class="comment-list" data-blog-comments></div>
+</section>
+{% endblock %}

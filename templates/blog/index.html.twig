@@ -5,26 +5,17 @@
 {% block body %}
 <section class="home-hero">
     <p class="eyebrow">Blog</p>
-    <h1>Talk about One Piece Card Game.</h1>
-    <p>Choose a topic and start a discussion. Messages are local for now until we add real user accounts and database persistence.</p>
+    <h1>Choose a discussion room.</h1>
+    <p>Trading and prices on one side, gameplay on the other.</p>
 </section>
 
 <section class="topic-grid">
     {% for topic in topics %}
-        <article class="detail-panel topic-card" data-topic="{{ topic.title|lower|replace({' ': '-'}) }}">
+        <div class="detail-panel topic-card" data-topic="{{ topic.slug }}">
             <h2>{{ topic.title }}</h2>
             <p>{{ topic.description }}</p>
-
-            <form class="comment-form" data-blog-form>
-                <label>
-                    Your message
-                    <textarea rows="4" placeholder="Write something about {{ topic.title }}"></textarea>
-                </label>
-                <button type="submit">Post</button>
-            </form>
-
-            <div class="comment-list" data-blog-comments></div>
-        </article>
+            <a class="card-detail-link" href="{{ path('blog_topic', { slug: topic.slug }) }}">{{ topic.button }}</a>
+        </div>
     {% endfor %}
 </section>
 {% endblock %}
