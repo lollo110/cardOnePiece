@@ -1,0 +1,92 @@
+{% if error %}
+    <p class="message">{{ error }}</p>
+{% endif %}
+
+{% if (query or rarity) and results is empty and not error %}
+    <p class="message">Aucune carte trouvee.</p>
+{% endif %}
+
+{% if rarityOptions is not empty %}
+    <section class="collection-tools">
+        <p>
+            {{ totalResults }} cartes
+            {% if rarity %}
+                - all {{ rarity }} cards
+            {% else %}
+                - page {{ paging.current }} / {{ paging.total }}
+            {% endif %}
+        </p>
+
+        <div class="filter-form">
+            <label>
+                Rarity
+                <select data-card-filter="rarity">
+                    <option value="">All rarities</option>
+                    {% for rarityOption in rarityOptions %}
+                        <option value="{{ rarityOption }}" {% if rarityOption == rarity %}selected{% endif %}>{{ rarityOption }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <button type="button" data-card-filter-reset>Reset filters</button>
+        </div>
+    </section>
+{% endif %}
+
+<section class="card-grid" data-card-grid>
+    {% for card in results %}
+        <article class="card-item" data-rarity="{{ card.rarity ?? '' }}">
+            {% if card.image is defined and card.image %}
+                <img class="card-image" src="{{ card.image }}" alt="{{ card.name_numbered ?? card.name }}" loading="lazy">
+            {% endif %}
+
+            <div class="card-content">
+                <h2>
+                    <a href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">
+                        {{ card.name_numbered ?? card.name }}
+                    </a>
+                </h2>
+
+                {% if card.episode.name is defined %}
+                    <p>{{ card.episode.name }}</p>
+                {% endif %}
+
+                <div class="card-tags">
+                    {% if card.rarity is defined and card.rarity %}
+                        <span>{{ card.rarity }}</span>
+                    {% endif %}
+
+                    {% if card.version is defined and card.version %}
+                        <span>{{ card.version }}</span>
+                    {% endif %}
+                </div>
+
+                <a class="card-detail-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">Details</a>
+            </div>
+        </article>
+    {% endfor %}
+</section>
+
+{% if paging.total > 1 and not rarity %}
+    <nav class="pagination" aria-label="Collection pages">
+        {% set pageParams = { q: query, sort: sort } %}
+
+        {% if paging.current > 1 %}
+            <a href="{{ path('cards', pageParams|merge({ page: 1 })) }}">First</a>
+            <a href="{{ path('cards', pageParams|merge({ page: paging.current - 1 })) }}">Previous</a>
+        {% else %}
+            <span>First</span>
+            <span>Previous</span>
+        {% endif %}
+
+        <span>Page {{ paging.current }} of {{ paging.total }}</span>
+
+        {% if paging.current < paging.total %}
+            <a href="{{ path('cards', pageParams|merge({ page: paging.current + 1 })) }}">Next</a>
+            <a href="{{ path('cards', pageParams|merge({ page: paging.total })) }}">Last</a>
+        {% else %}
+            <span>Next</span>
+            <span>Last</span>
+        {% endif %}
+    </nav>
+{% endif %}

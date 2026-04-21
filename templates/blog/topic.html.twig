@@ -5,23 +5,37 @@
 {% block body %}
 <a class="back-link" href="{{ path('blog') }}">Back to blog</a>
 
-<section class="home-hero">
+<section class="home-hero" id="discussion">
     <p class="eyebrow">Blog</p>
     <h1>{{ topic.title }}</h1>
     <p>{{ topic.description }}</p>
 </section>
 
-<section class="detail-panel topic-card" data-topic="{{ topic.slug }}">
+<section class="detail-panel topic-card">
     <h2>Discussion</h2>
 
-    <form class="comment-form" data-blog-form>
+    <form class="comment-form" method="post">
+        <input type="hidden" name="_token" value="{{ csrf_token('blog_comment_' ~ topic.id) }}">
+        <label>
+            Your name
+            <input type="text" value="{{ commentAuthorName }}" readonly>
+        </label>
         <label>
             Your message
-            <textarea rows="4" placeholder="Write something about {{ topic.title }}"></textarea>
+            <textarea name="content" rows="4" maxlength="2000" minlength="3" required placeholder="Write something about {{ topic.title }}"></textarea>
         </label>
         <button type="submit">Post</button>
     </form>
 
-    <div class="comment-list" data-blog-comments></div>
+    <div class="comment-list">
+        {% for comment in comments %}
+            <article class="comment-item">
+                <p>{{ comment.content }}</p>
+                <small>{{ comment.authorName }} - {{ comment.createdAt|date('Y-m-d H:i') }}</small>
+            </article>
+        {% else %}
+            <p class="muted">No messages yet.</p>
+        {% endfor %}
+    </div>
 </section>
 {% endblock %}

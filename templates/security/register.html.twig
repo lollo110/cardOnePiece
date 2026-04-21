@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Sign up{% endblock %}
+
+{% block body %}
+<section class="auth-shell">
+    <div class="detail-panel auth-panel">
+        <p class="eyebrow">Join the crew</p>
+        <h1>Create your account</h1>
+        <p class="muted">Register once, then post with your username across cards and blog discussions.</p>
+
+        {{ form_start(registrationForm, { attr: { class: 'auth-form' } }) }}
+            {{ form_row(registrationForm.email) }}
+            {{ form_row(registrationForm.username) }}
+            {{ form_row(registrationForm.plainPassword) }}
+            <button type="submit">Create account</button>
+        {{ form_end(registrationForm) }}
+
+        <p class="auth-switch">Already registered? <a href="{{ path('app_login') }}">Sign in</a></p>
+    </div>
+</section>
+{% endblock %}

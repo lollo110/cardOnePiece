@@ -48,7 +48,7 @@ class Card
     #[ORM\Column(length: 80, nullable: true)]
     private ?string $color = null;
 
-    #[ORM\Column(length: 80, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $version = null;
 
     #[ORM\Column(length: 80, nullable: true)]

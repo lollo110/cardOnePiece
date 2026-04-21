@@ -40,78 +40,90 @@
         <h1>{{ card.name_numbered ?? card.name }}</h1>
 
         <div class="card-tags">
-            {% if card.color is defined and card.color %}<span>{{ card.color }}</span>{% endif %}
             {% if card.rarity is defined and card.rarity %}<span>{{ card.rarity }}</span>{% endif %}
-            {% if card.type is defined and card.type %}<span>{{ card.type }}</span>{% endif %}
             {% if card.card_number is defined and card.card_number %}<span>{{ card.card_number }}</span>{% endif %}
+            {% if card.version is defined and card.version %}<span>{{ card.version }}</span>{% endif %}
         </div>
 
         <dl class="detail-list">
             <div><dt>Name</dt><dd>{{ card.name ?? 'N/A' }}</dd></div>
             <div><dt>Card number</dt><dd>{{ card.card_number ?? 'N/A' }}</dd></div>
-            <div><dt>HP</dt><dd>{{ card.hp ?? 'N/A' }}</dd></div>
-            <div><dt>Artist</dt><dd>{{ card.artist.name ?? 'N/A' }}</dd></div>
-            <div><dt>Release</dt><dd>{{ card.episode.released_at ?? 'N/A' }}</dd></div>
+            <div><dt>Set</dt><dd>{{ card.episode.name ?? 'N/A' }}</dd></div>
+            <div><dt>Set code</dt><dd>{{ card.episode.code ?? 'N/A' }}</dd></div>
+            <div><dt>Rarity</dt><dd>{{ card.rarity ?? 'N/A' }}</dd></div>
+            <div><dt>Languages</dt><dd>{{ card.languages is not empty ? card.languages|join(', ') : 'N/A' }}</dd></div>
         </dl>
-
-        {% if card.links is defined or card.tcggo_url is defined %}
-            <div class="external-links">
-                {% if card.tcggo_url is defined and card.tcggo_url %}<a href="{{ card.tcggo_url }}" target="_blank" rel="noreferrer">TCGGO</a>{% endif %}
-                {% if card.links.cardmarket is defined %}<a href="{{ card.links.cardmarket }}" target="_blank" rel="noreferrer">Cardmarket</a>{% endif %}
-                {% if card.links.tcgplayer is defined %}<a href="{{ card.links.tcgplayer }}" target="_blank" rel="noreferrer">TCGPlayer</a>{% endif %}
-            </div>
-        {% endif %}
     </div>
 </section>
 
-<section class="detail-panel comments-panel" data-comments-scope="card-{{ card.id }}">
-    <h2>Comments</h2>
-    <p class="muted">Comments are saved locally in this browser for now.</p>
+<section class="detail-panel comments-panel" id="card-discussion">
+    <h2>Card discussion</h2>
+    <p class="muted">Choose a topic and a language to read or write only in that thread.</p>
 
-    <form class="comment-form" data-card-comment-form>
-        <label>
-            Your comment
-            <textarea rows="4" placeholder="Share a note about {{ card.name_numbered ?? card.name }}"></textarea>
-        </label>
-        <button type="submit">Post comment</button>
-    </form>
+    <div
+        class="discussion-shell"
+        data-card-discussion
+        data-comments-url="{{ path('card_comments', { id: card.id }) }}"
+        data-default-discussion="{{ cardCommentOptions.defaultDiscussionType }}"
+        data-default-language="{{ cardCommentOptions.defaultLanguage }}"
+        data-initial-comments="{{ initialComments|json_encode|e('html_attr') }}"
+    >
+        <div class="discussion-toolbar">
+            <label class="discussion-select">
+                Topic
+                <select data-card-discussion-type>
+                    {% for key, label in cardCommentOptions.discussionTypes %}
+                        <option value="{{ key }}" {% if key == cardCommentOptions.defaultDiscussionType %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
 
-    <div class="comment-list" data-card-comments></div>
-</section>
-
-<section class="detail-panel">
-    <div class="panel-heading">
-        <div>
-            <p class="eyebrow">Prices</p>
-            <h2>Price graph</h2>
+            <div class="discussion-languages">
+                <p>Language</p>
+                <div class="language-button-row">
+                    {% for language in cardCommentOptions.languages %}
+                        <button
+                            type="button"
+                            class="language-button{% if language.key == cardCommentOptions.defaultLanguage %} is-active{% endif %}"
+                            data-card-language-button
+                            data-language="{{ language.key }}"
+                        >
+                            {{ language.label }}
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
 
-        <label>
-            Language / market
-            <select data-price-language data-price-url="{{ path('card_prices', { id: card.id, name: card.name_numbered ?? card.name }) }}">
-                {% for key, label in languageOptions %}
-                    <option value="{{ key }}">{{ label }}</option>
-                {% endfor %}
-            </select>
-        </label>
-    </div>
+        <p class="muted" data-card-discussion-status>
+            Showing {{ cardCommentOptions.discussionTypes[cardCommentOptions.defaultDiscussionType] }} comments for {{ cardCommentOptions.languages|first.label }}.
+        </p>
 
-    <p class="muted" data-price-message>
-        {% if not initialPriceChart.available %}
-            {{ initialPriceChart.message }}
-        {% else %}
-            Daily price history from the API sync.
-        {% endif %}
-    </p>
+        <form class="comment-form" data-card-discussion-form>
+            <input type="hidden" name="_token" value="{{ csrf_token('card_comment_' ~ card.id) }}">
+            <input type="hidden" name="discussion_type" value="{{ cardCommentOptions.defaultDiscussionType }}" data-card-discussion-type-input>
+            <input type="hidden" name="language" value="{{ cardCommentOptions.defaultLanguage }}" data-card-discussion-language-input>
+            <label>
+                Your name
+                <input type="text" value="{{ commentAuthorName }}" readonly>
+            </label>
+            <label>
+                Your comment
+                <textarea name="content" rows="4" maxlength="2000" minlength="3" required placeholder="Share a note about {{ card.name_numbered ?? card.name }}"></textarea>
+            </label>
+            <button type="submit">Post comment</button>
+        </form>
 
-    <div class="market-chart" data-market-chart data-initial-chart="{{ initialPriceChart|json_encode|e('html_attr') }}">
-        <svg viewBox="0 0 640 260" role="img" aria-label="Price chart">
-            <line x1="44" y1="20" x2="44" y2="220"></line>
-            <line x1="44" y1="220" x2="620" y2="220"></line>
-            <polyline points="" data-chart-line></polyline>
-            <g data-chart-points></g>
-        </svg>
-        <div class="chart-labels" data-chart-labels></div>
+        <div class="comment-list" data-card-comments>
+            {% for comment in initialComments %}
+                <article class="comment-item">
+                    <p>{{ comment.content }}</p>
+                    <small>{{ comment.authorName }} - {{ comment.createdAt }}</small>
+                </article>
+            {% else %}
+                <p class="muted">No comments yet.</p>
+            {% endfor %}
+        </div>
     </div>
 </section>
 
@@ -119,14 +131,12 @@
     <article class="detail-panel">
         <h2>Card information</h2>
         <dl class="detail-list">
-            {% for key, value in card %}
-                {% if key not in ['prices', 'episode', 'artist', 'links'] %}
-                    <div>
-                        <dt>{{ key|replace({'_': ' '})|title }}</dt>
-                        <dd>{{ cardMacros.render_value(value) }}</dd>
-                    </div>
-                {% endif %}
-            {% endfor %}
+            <div><dt>Name</dt><dd>{{ card.name ?? 'N/A' }}</dd></div>
+            <div><dt>Card number</dt><dd>{{ card.card_number ?? 'N/A' }}</dd></div>
+            <div><dt>Rarity</dt><dd>{{ card.rarity ?? 'N/A' }}</dd></div>
+            <div><dt>Version</dt><dd>{{ card.version ?? 'N/A' }}</dd></div>
+            <div><dt>Languages</dt><dd>{{ card.languages is not empty ? card.languages|join(', ') : 'N/A' }}</dd></div>
+            <div><dt>Source</dt><dd>{{ card.source ?? 'CardTrader' }}</dd></div>
         </dl>
     </article>
 
@@ -136,13 +146,12 @@
     </article>
 
     <article class="detail-panel">
-        <h2>Artist</h2>
-        {{ cardMacros.render_value(card.artist ?? {}) }}
-    </article>
-
-    <article class="detail-panel">
-        <h2>All price data</h2>
-        {{ cardMacros.render_value(card.prices ?? {}) }}
+        <h2>External IDs</h2>
+        <dl class="detail-list">
+            <div><dt>CardTrader ID</dt><dd>{{ card.id }}</dd></div>
+            <div><dt>TCGplayer ID</dt><dd>{{ card.tcgplayer_id ?? 'N/A' }}</dd></div>
+            <div><dt>Cardmarket ID</dt><dd>{{ card.cardmarket_id ?? 'N/A' }}</dd></div>
+        </dl>
     </article>
 </section>
 {% endblock %}

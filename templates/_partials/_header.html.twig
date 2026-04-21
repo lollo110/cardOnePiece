@@ -1,18 +1,29 @@
 <header class="site-header">
-    <a class="site-logo" href="{{ path('app_home') }}">One Piece Card Game</a>
+    <a class="site-logo" href="{{ path('app_home') }}">Pirate Card Blog</a>
 
-    <nav class="site-nav">
-        <a href="{{ path('app_home') }}">Home</a>
-        <a href="{{ path('cards') }}">Collection</a>
-        <a href="{{ path('market') }}">Market</a>
-        <a href="{{ path('blog') }}">Blog</a>
-    </nav>
+    <div class="site-meta">
+        <nav class="site-nav">
+            <a href="{{ path('app_home') }}">Home</a>
+            <a href="{{ path('cards') }}">Collection</a>
+            <a href="{{ path('blog') }}">Blog</a>
+        </nav>
 
-    <form method="get" action="{{ path('cards') }}" class="header-search">
-        <div class="search-autocomplete">
-            <input type="text" name="q" value="{{ app.request.query.get('q') }}" placeholder="Search a card" autocomplete="off" data-suggest-url="{{ path('cards_suggestions') }}" data-search-input>
-            <div class="suggestions" data-suggestions hidden></div>
+        <form method="get" action="{{ path('cards') }}" class="header-search">
+            <div class="search-autocomplete">
+                <input type="text" name="q" value="{{ app.request.query.get('q') }}" placeholder="Search a card" autocomplete="off" data-suggest-url="{{ path('cards_suggestions') }}" data-search-input>
+                <div class="suggestions" data-suggestions hidden></div>
+            </div>
+            <button>Search</button>
+        </form>
+
+        <div class="site-auth">
+            {% if app.user %}
+                <span class="site-user">Hi, {{ app.user.username }}</span>
+                <a href="{{ path('app_logout') }}">Sign out</a>
+            {% else %}
+                <a href="{{ path('app_login') }}">Sign in</a>
+                <a class="site-auth-strong" href="{{ path('app_register') }}">Sign up</a>
+            {% endif %}
         </div>
-        <button>Search</button>
-    </form>
+    </div>
 </header>

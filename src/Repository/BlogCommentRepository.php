@@ -12,4 +12,17 @@ class BlogCommentRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, BlogComment::class);
     }
+
+    public function findForTopic(\App\Entity\BlogTopic $topic, int $limit = 100): array
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere('c.topic = :topic')
+            ->andWhere('c.moderationStatus = :status')
+            ->setParameter('topic', $topic)
+            ->setParameter('status', BlogComment::STATUS_PUBLISHED)
+            ->orderBy('c.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }

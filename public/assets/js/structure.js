@@ -1,9 +1,11 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const grid = document.querySelector('[data-card-grid]');
+const initializeStructure = () => {
     const searchInput = document.querySelector('[data-search-input]');
     const suggestionsBox = document.querySelector('[data-suggestions]');
+    const discussion = document.querySelector('[data-card-discussion]');
+    const cardResults = document.querySelector('[data-card-results]');
 
-    if (searchInput && suggestionsBox) {
+    if (searchInput && suggestionsBox && searchInput.dataset.jsReady !== 'true') {
+        searchInput.dataset.jsReady = 'true';
         let suggestTimeout;
 
         const clearSuggestions = () => {
@@ -65,144 +67,41 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const priceLanguage = document.querySelector('[data-price-language]');
-    const marketChart = document.querySelector('[data-market-chart]');
-    const priceMessage = document.querySelector('[data-price-message]');
+    if (discussion && discussion.dataset.jsReady !== 'true') {
+        discussion.dataset.jsReady = 'true';
+        const commentsUrl = discussion.dataset.commentsUrl;
+        const typeSelect = discussion.querySelector('[data-card-discussion-type]');
+        const typeInput = discussion.querySelector('[data-card-discussion-type-input]');
+        const languageInput = discussion.querySelector('[data-card-discussion-language-input]');
+        const status = discussion.querySelector('[data-card-discussion-status]');
+        const form = discussion.querySelector('[data-card-discussion-form]');
+        const list = discussion.querySelector('[data-card-comments]');
+        const languageButtons = Array.from(discussion.querySelectorAll('[data-card-language-button]'));
 
-    const renderMarketChart = (chart) => {
-        if (!marketChart) {
-            return;
-        }
+        let currentDiscussion = discussion.dataset.defaultDiscussion ?? 'trading';
+        let currentLanguage = discussion.dataset.defaultLanguage ?? 'english';
+        let requestSequence = 0;
 
-        const line = marketChart.querySelector('[data-chart-line]');
-        const pointLayer = marketChart.querySelector('[data-chart-points]');
-        const labels = marketChart.querySelector('[data-chart-labels]');
-        const points = (chart.points ?? [])
-            .map((point) => ({
-                ...point,
-                value: Number(point.value),
-            }))
-            .filter((point) => Number.isFinite(point.value));
+        const discussionLabel = () => typeSelect?.selectedOptions[0]?.textContent?.trim() ?? 'Trading';
+        const languageLabel = () => languageButtons.find((button) => button.dataset.language === currentLanguage)?.textContent?.trim() ?? currentLanguage;
 
-        if (!line || !pointLayer || !labels) {
-            return;
-        }
-
-        pointLayer.innerHTML = '';
-        labels.innerHTML = '';
-
-        if (!chart.available || !points.length) {
-            line.setAttribute('points', '');
-            if (priceMessage) {
-                priceMessage.textContent = chart.message ?? 'No price data is available for this language.';
-            }
-            marketChart.classList.add('is-empty');
-            return;
-        }
-
-        marketChart.classList.remove('is-empty');
-        if (priceMessage) {
-            priceMessage.textContent = `Daily price history for ${chart.label}.`;
-        }
-
-        const values = points.map((point) => Number(point.value));
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        const isFlat = max === min;
-        const spread = isFlat ? 1 : max - min;
-        const width = 560;
-        const left = 60;
-        const bottom = 220;
-        const height = 180;
-        const coordinates = points.map((point, index) => {
-            const x = left + (points.length === 1 ? width / 2 : (index / (points.length - 1)) * width);
-            const y = isFlat ? bottom - (height / 2) : bottom - ((point.value - min) / spread) * height;
-            return { x, y, point };
-        });
-
-        if (coordinates.length === 1) {
-            line.setAttribute('points', `${left},${coordinates[0].y} ${left + width},${coordinates[0].y}`);
-        } else {
-            line.setAttribute('points', coordinates.map(({ x, y }) => `${x},${y}`).join(' '));
-        }
-
-        coordinates.forEach(({ x, y, point }) => {
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', String(x));
-            circle.setAttribute('cy', String(y));
-            circle.setAttribute('r', '6');
-            pointLayer.append(circle);
-
-            const label = document.createElement('span');
-            const value = document.createElement('strong');
-            const name = document.createElement('small');
-            value.textContent = `${point.value} ${chart.currency}`;
-            name.textContent = point.label;
-            label.append(value, name);
-            labels.append(label);
-        });
-    };
-
-    if (marketChart?.dataset.initialChart) {
-        try {
-            renderMarketChart(JSON.parse(marketChart.dataset.initialChart));
-        } catch (error) {
-            marketChart.classList.add('is-empty');
-        }
-    }
-
-    priceLanguage?.addEventListener('change', async () => {
-        if (!priceLanguage.dataset.priceUrl) {
-            return;
-        }
-
-        const url = new URL(priceLanguage.dataset.priceUrl, window.location.origin);
-        url.searchParams.set('language', priceLanguage.value);
-
-        if (priceMessage) {
-            priceMessage.textContent = 'Loading price data...';
-        }
-
-        try {
-            const response = await fetch(url.toString(), {
-                headers: {
-                    'Accept': 'application/json',
-                },
+        const setLanguageButtons = () => {
+            languageButtons.forEach((button) => {
+                button.classList.toggle('is-active', button.dataset.language === currentLanguage);
             });
-            renderMarketChart(await response.json());
-        } catch (error) {
-            if (priceMessage) {
-                priceMessage.textContent = 'Unable to load price data.';
+        };
+
+        const renderComments = (comments) => {
+            if (!list) {
+                return;
             }
-        }
-    });
 
-    const setupLocalComments = (scopeSelector, formSelector, listSelector, prefix) => {
-        const scope = document.querySelector(scopeSelector);
-
-        if (!scope) {
-            return;
-        }
-
-        const form = scope.querySelector(formSelector);
-        const textarea = form?.querySelector('textarea');
-        const list = scope.querySelector(listSelector);
-        const key = `${prefix}:${scope.dataset.commentsScope ?? scope.dataset.topic ?? 'global'}`;
-
-        if (!form || !textarea || !list) {
-            return;
-        }
-
-        const readComments = () => JSON.parse(window.localStorage.getItem(key) ?? '[]');
-        const writeComments = (comments) => window.localStorage.setItem(key, JSON.stringify(comments));
-        const renderComments = () => {
-            const comments = readComments();
             list.innerHTML = '';
 
             if (!comments.length) {
                 const empty = document.createElement('p');
                 empty.className = 'muted';
-                empty.textContent = 'No comments yet.';
+                empty.textContent = 'No comments yet for this topic and language.';
                 list.append(empty);
                 return;
             }
@@ -212,72 +111,241 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.className = 'comment-item';
                 const text = document.createElement('p');
                 const meta = document.createElement('small');
-                text.textContent = comment.text;
-                meta.textContent = comment.date;
+                text.textContent = comment.content;
+                meta.textContent = `${comment.authorName} - ${comment.createdAt}`;
                 item.append(text, meta);
                 list.append(item);
             });
         };
 
-        form.addEventListener('submit', (event) => {
-            event.preventDefault();
-            const text = textarea.value.trim();
+        const setStatus = (message) => {
+            if (status) {
+                status.textContent = message;
+            }
+        };
 
-            if (!text) {
+        const syncHiddenInputs = () => {
+            if (typeInput) {
+                typeInput.value = currentDiscussion;
+            }
+
+            if (languageInput) {
+                languageInput.value = currentLanguage;
+            }
+        };
+
+        const loadComments = async () => {
+            if (!commentsUrl) {
                 return;
             }
 
-            writeComments([
-                { text, date: new Date().toLocaleString() },
-                ...readComments(),
-            ]);
-            textarea.value = '';
-            renderComments();
+            const currentRequest = ++requestSequence;
+            const url = new URL(commentsUrl, window.location.origin);
+            url.searchParams.set('discussion', currentDiscussion);
+            url.searchParams.set('language', currentLanguage);
+            setStatus(`Loading ${discussionLabel()} comments for ${languageLabel()}...`);
+
+            try {
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(payload.error ?? 'Unable to load comments.');
+                }
+
+                if (currentRequest !== requestSequence) {
+                    return;
+                }
+
+                renderComments(payload.comments ?? []);
+                setStatus(`Showing ${payload.discussionLabel ?? discussionLabel()} comments for ${payload.languageLabel ?? languageLabel()}.`);
+            } catch (error) {
+                if (currentRequest !== requestSequence) {
+                    return;
+                }
+
+                setStatus(error.message || 'Unable to load comments.');
+            }
+        };
+
+        if (discussion.dataset.initialComments) {
+            try {
+                renderComments(JSON.parse(discussion.dataset.initialComments));
+            } catch (error) {
+                renderComments([]);
+            }
+        }
+
+        setLanguageButtons();
+        syncHiddenInputs();
+
+        typeSelect?.addEventListener('change', () => {
+            currentDiscussion = typeSelect.value;
+            syncHiddenInputs();
+            void loadComments();
         });
 
-        renderComments();
-    };
+        languageButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                currentLanguage = button.dataset.language ?? currentLanguage;
+                setLanguageButtons();
+                syncHiddenInputs();
+                void loadComments();
+            });
+        });
 
-    setupLocalComments('[data-comments-scope]', '[data-card-comment-form]', '[data-card-comments]', 'card-comments');
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
 
-    document.querySelectorAll('[data-topic]').forEach((topic) => {
-        setupLocalComments(`[data-topic="${topic.dataset.topic}"]`, '[data-blog-form]', '[data-blog-comments]', 'blog-comments');
-    });
+            if (!commentsUrl || !(form instanceof HTMLFormElement)) {
+                return;
+            }
 
-    if (!grid) {
+            const formData = new FormData(form);
+            formData.set('discussion_type', currentDiscussion);
+            formData.set('language', currentLanguage);
+            setStatus(`Posting in ${discussionLabel()} / ${languageLabel()}...`);
+
+            try {
+                const response = await fetch(commentsUrl, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                    body: formData,
+                });
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(payload.error ?? 'Unable to post comment.');
+                }
+
+                const textarea = form.querySelector('textarea');
+                if (textarea instanceof HTMLTextAreaElement) {
+                    textarea.value = '';
+                }
+
+                renderComments(payload.comments ?? []);
+                if (payload.notice) {
+                    setStatus(payload.notice);
+                    return;
+                }
+
+                setStatus(`Showing ${payload.discussionLabel ?? discussionLabel()} comments for ${payload.languageLabel ?? languageLabel()}.`);
+            } catch (error) {
+                setStatus(error.message || 'Unable to post comment.');
+            }
+        });
+    }
+
+    if (!cardResults || cardResults.dataset.jsReady === 'true') {
         return;
     }
 
-    grid.classList.add('is-loaded');
+    cardResults.dataset.jsReady = 'true';
+    const filterUrl = cardResults.dataset.filterUrl;
+    const collectionForm = document.querySelector('#collection-options');
+    const grid = cardResults.querySelector('[data-card-grid]');
 
-    const colorFilter = document.querySelector('[data-card-filter="color"]');
-    const rarityFilter = document.querySelector('[data-card-filter="rarity"]');
-    const resetButton = document.querySelector('[data-card-filter-reset]');
-    const cards = Array.from(grid.querySelectorAll('.card-item'));
+    if (grid) {
+        grid.classList.add('is-loaded');
+    }
 
-    const applyFilters = () => {
-        const color = colorFilter?.value ?? '';
-        const rarity = rarityFilter?.value ?? '';
+    const rarityFilter = cardResults.querySelector('[data-card-filter="rarity"]');
+    const resetButton = cardResults.querySelector('[data-card-filter-reset]');
 
-        cards.forEach((card) => {
-            const matchesColor = !color || card.dataset.color === color;
-            const matchesRarity = !rarity || card.dataset.rarity === rarity;
+    const syncCollectionState = (rarity) => {
+        cardResults.dataset.rarity = rarity;
 
-            card.classList.toggle('is-hidden', !matchesColor || !matchesRarity);
-        });
-    };
-
-    colorFilter?.addEventListener('change', applyFilters);
-    rarityFilter?.addEventListener('change', applyFilters);
-    resetButton?.addEventListener('click', () => {
-        if (colorFilter) {
-            colorFilter.value = '';
+        if (!(collectionForm instanceof HTMLFormElement)) {
+            return;
         }
 
-        if (rarityFilter) {
+        let rarityInput = collectionForm.querySelector('input[name="rarity"]');
+
+        if (rarity !== '') {
+            if (!(rarityInput instanceof HTMLInputElement)) {
+                rarityInput = document.createElement('input');
+                rarityInput.type = 'hidden';
+                rarityInput.name = 'rarity';
+                collectionForm.append(rarityInput);
+            }
+
+            rarityInput.value = rarity;
+            return;
+        }
+
+        rarityInput?.remove();
+    };
+
+    const replaceResults = (html, rarity) => {
+        cardResults.innerHTML = html;
+        cardResults.dataset.jsReady = 'false';
+        syncCollectionState(rarity);
+
+        const url = new URL(window.location.href);
+        if (rarity !== '') {
+            url.searchParams.set('rarity', rarity);
+            url.searchParams.delete('page');
+        } else {
+            url.searchParams.delete('rarity');
+        }
+
+        window.history.replaceState({}, '', url);
+        initializeStructure();
+    };
+
+    const fetchResults = async (rarity) => {
+        if (!filterUrl) {
+            syncCollectionState(rarity);
+            collectionForm?.requestSubmit();
+            return;
+        }
+
+        const sortSelect = collectionForm?.querySelector('select[name="sort"]');
+        const url = new URL(filterUrl, window.location.origin);
+        url.searchParams.set('q', cardResults.dataset.query ?? '');
+        url.searchParams.set('sort', sortSelect instanceof HTMLSelectElement ? sortSelect.value : (cardResults.dataset.sort ?? 'relevance'));
+
+        if (rarity !== '') {
+            url.searchParams.set('rarity', rarity);
+        }
+
+        try {
+            const response = await fetch(url.toString(), {
+                headers: {
+                    Accept: 'application/json',
+                },
+            });
+            const payload = await response.json();
+
+            if (!response.ok) {
+                throw new Error(payload.error ?? 'Unable to filter cards.');
+            }
+
+            replaceResults(payload.html ?? '', rarity);
+        } catch (error) {
+            syncCollectionState(rarity);
+            collectionForm?.requestSubmit();
+        }
+    };
+
+    rarityFilter?.addEventListener('change', () => {
+        void fetchResults(rarityFilter.value);
+    });
+
+    resetButton?.addEventListener('click', () => {
+        if (rarityFilter instanceof HTMLSelectElement) {
             rarityFilter.value = '';
         }
 
-        applyFilters();
+        void fetchResults('');
     });
-});
+};
+
+document.addEventListener('DOMContentLoaded', initializeStructure);
+document.addEventListener('turbo:load', initializeStructure);

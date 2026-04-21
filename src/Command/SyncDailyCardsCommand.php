@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'app:cards:sync-daily', description: 'Sync One Piece cards from the API at most once per day.')]
+#[AsCommand(name: 'app:cards:sync-daily', description: 'Sync One Piece cards from CardTrader at most once per day.')]
 class SyncDailyCardsCommand extends Command
 {
     private const SYNC_NAME = 'daily_cards';
@@ -28,7 +28,7 @@ class SyncDailyCardsCommand extends Command
     {
         $this
             ->addOption('force', null, InputOption::VALUE_NONE, 'Run the sync even if it already ran today')
-            ->addOption('pages', null, InputOption::VALUE_REQUIRED, 'Limit number of API pages to sync')
+            ->addOption('pages', null, InputOption::VALUE_REQUIRED, 'Limit number of CardTrader expansions to sync')
             ->addOption('flush-every', null, InputOption::VALUE_REQUIRED, 'Flush every N cards', 100);
     }
 
@@ -47,7 +47,7 @@ class SyncDailyCardsCommand extends Command
         $stats = $this->cardImporter->import(
             $input->getOption('pages') ? (int) $input->getOption('pages') : null,
             max(1, (int) $input->getOption('flush-every')),
-            static fn (int $page, int $totalPages) => $io->writeln(sprintf('Synced page %d/%d', $page, $totalPages))
+            static fn (int $page, int $totalPages, string $label) => $io->writeln(sprintf('Synced expansion %d/%d: %s', $page, $totalPages, $label))
         );
 
         $state->setLastRunAt($now);

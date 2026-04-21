@@ -3,24 +3,19 @@
 namespace App\Service;
 
 use App\Entity\Card;
-use App\Entity\CardArtist;
 use App\Entity\CardEpisode;
-use App\Entity\CardPrice;
-use App\Entity\CardPriceHistory;
 use Doctrine\ORM\EntityManagerInterface;
 
 class CardImporter
 {
     private array $cardCache = [];
     private array $episodeCache = [];
-    private array $artistCache = [];
-    private array $priceCache = [];
 
     private int $created = 0;
     private int $updated = 0;
 
     public function __construct(
-        private readonly CardService $cardService,
+        private readonly CardTraderCatalogService $catalogService,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -28,21 +23,14 @@ class CardImporter
     public function import(?int $pageLimit = null, int $flushEvery = 100, ?callable $onPageImported = null): array
     {
         $this->reset();
-
-        $firstPage = $this->cardService->apiCollectionPage(1);
-        $this->guardApiResponse($firstPage);
-
-        $totalPages = (int) ($firstPage['paging']['total'] ?? 1);
-        $pageLimit = $pageLimit ? min($pageLimit, $totalPages) : $totalPages;
+        $expansions = $this->catalogService->expansions($pageLimit);
+        $totalPages = count($expansions);
         $flushEvery = max(1, $flushEvery);
         $count = 0;
 
-        for ($page = 1; $page <= $pageLimit; $page++) {
-            $response = $page === 1 ? $firstPage : $this->cardService->apiCollectionPage($page);
-            $this->guardApiResponse($response);
-
-            foreach ($response['data'] ?? [] as $payload) {
-                $this->upsertCard($payload);
+        foreach ($expansions as $index => $expansion) {
+            foreach ($this->catalogService->cardsForExpansion($expansion) as $payload) {
+                $this->upsertCard($payload, $expansion);
                 $count++;
 
                 if ($count % $flushEvery === 0) {
@@ -50,7 +38,7 @@ class CardImporter
                 }
             }
 
-            $onPageImported?->__invoke($page, $pageLimit);
+            $onPageImported?->__invoke($index + 1, $totalPages, $this->catalogService->expansionLabel($expansion));
         }
 
         $this->entityManager->flush();
@@ -66,20 +54,11 @@ class CardImporter
     {
         $this->cardCache = [];
         $this->episodeCache = [];
-        $this->artistCache = [];
-        $this->priceCache = [];
         $this->created = 0;
         $this->updated = 0;
     }
 
-    private function guardApiResponse(array $response): void
-    {
-        if ($response['error'] ?? null) {
-            throw new \RuntimeException((string) $response['error']);
-        }
-    }
-
-    private function upsertCard(array $payload): void
+    private function upsertCard(array $payload, array $expansionPayload): void
     {
         $apiId = (int) ($payload['id'] ?? 0);
 
@@ -87,47 +66,41 @@ class CardImporter
             return;
         }
 
-        if (isset($this->cardCache[$apiId])) {
-            $card = $this->cardCache[$apiId];
-            $this->updated++;
-        } else {
-            $card = $this->entityManager->getRepository(Card::class)->findOneBy(['apiId' => $apiId]);
-
-            if ($card) {
-                $this->updated++;
-            } else {
-                $card = new Card();
-                $this->created++;
-            }
-
-            $this->cardCache[$apiId] = $card;
-        }
+        $episode = $this->upsertEpisode($expansionPayload);
+        $card = $this->resolveCard($apiId, $payload, $episode);
+        $collectorNumber = trim((string) ($payload['fixed_properties']['collector_number'] ?? ''));
+        $cardmarketId = $this->primaryCardmarketId($payload);
+        $languages = $this->extractLanguages($payload);
 
         $card
             ->setApiId($apiId)
-            ->setEpisode($this->upsertEpisode($payload['episode'] ?? null))
-            ->setArtist($this->upsertArtist($payload['artist'] ?? null))
+            ->setEpisode($episode)
+            ->setArtist(null)
             ->setName((string) ($payload['name'] ?? 'Unknown card'))
-            ->setNameNumbered($payload['name_numbered'] ?? null)
-            ->setSlug($payload['slug'] ?? null)
-            ->setType($payload['type'] ?? null)
-            ->setCardNumber($payload['card_number'] ?? null)
-            ->setHp(isset($payload['hp']) ? (string) $payload['hp'] : null)
-            ->setRarity($payload['rarity'] ?? null)
-            ->setColor($payload['color'] ?? null)
-            ->setVersion($payload['version'] ?? null)
-            ->setSupertype($payload['supertype'] ?? null)
-            ->setTcgid(isset($payload['tcgid']) ? (int) $payload['tcgid'] : null)
-            ->setCardmarketId(isset($payload['cardmarket_id']) ? (int) $payload['cardmarket_id'] : null)
-            ->setTcgplayerId(isset($payload['tcgplayer_id']) ? (int) $payload['tcgplayer_id'] : null)
-            ->setImage($payload['image'] ?? null)
-            ->setTcggoUrl($payload['tcggo_url'] ?? null)
-            ->setLinks($payload['links'] ?? null)
-            ->setRawData($payload)
+            ->setNameNumbered($this->buildDisplayName((string) ($payload['name'] ?? 'Unknown card'), $collectorNumber))
+            ->setSlug($this->slugify(sprintf('%s-%s-%s', (string) ($payload['name'] ?? ''), $collectorNumber, (string) ($payload['version'] ?? ''))))
+            ->setType(null)
+            ->setCardNumber($collectorNumber !== '' ? $collectorNumber : null)
+            ->setHp(null)
+            ->setRarity($this->normalizeRarity($payload['fixed_properties']['onepiece_rarity'] ?? null))
+            ->setColor(null)
+            ->setVersion($this->boundedNullableString($payload['version'] ?? null, 255))
+            ->setSupertype(null)
+            ->setTcgid(null)
+            ->setCardmarketId($cardmarketId)
+            ->setTcgplayerId(isset($payload['tcg_player_id']) && $payload['tcg_player_id'] !== null ? (int) $payload['tcg_player_id'] : null)
+            ->setImage($this->resolveImageUrl($payload))
+            ->setTcggoUrl(null)
+            ->setLinks(null)
+            ->setRawData([
+                'source' => 'cardtrader',
+                'languages' => $languages,
+                'blueprint' => $payload,
+                'expansion' => $expansionPayload,
+            ])
             ->setUpdatedAt(new \DateTimeImmutable());
 
         $this->entityManager->persist($card);
-        $this->upsertPrice($card, $payload['prices'] ?? []);
     }
 
     private function upsertEpisode(?array $payload): ?CardEpisode
@@ -141,104 +114,167 @@ class CardImporter
         if (isset($this->episodeCache[$apiId])) {
             $episode = $this->episodeCache[$apiId];
         } else {
-            $episode = $this->entityManager->getRepository(CardEpisode::class)->findOneBy(['apiId' => $apiId]) ?? new CardEpisode();
+            $episode = $this->entityManager->getRepository(CardEpisode::class)->findOneBy(['apiId' => $apiId]);
+
+            if (!$episode && !empty($payload['code'])) {
+                $episode = $this->entityManager->getRepository(CardEpisode::class)->findOneBy(['code' => strtoupper((string) $payload['code'])]);
+            }
+
+            $episode ??= new CardEpisode();
             $this->episodeCache[$apiId] = $episode;
         }
 
         $episode
             ->setApiId($apiId)
             ->setName((string) ($payload['name'] ?? 'Unknown set'))
-            ->setSlug($payload['slug'] ?? null)
-            ->setCode($payload['code'] ?? null)
-            ->setLogo($payload['logo'] ?? null)
+            ->setSlug($this->slugify((string) ($payload['name'] ?? $payload['code'] ?? 'set')))
+            ->setCode(!empty($payload['code']) ? strtoupper((string) $payload['code']) : null)
+            ->setReleasedAt(null)
+            ->setLogo(null)
             ->setRawData($payload);
-
-        if (!empty($payload['released_at'])) {
-            $episode->setReleasedAt(new \DateTimeImmutable($payload['released_at']));
-        }
 
         $this->entityManager->persist($episode);
 
         return $episode;
     }
 
-    private function upsertArtist(?array $payload): ?CardArtist
+    private function resolveCard(int $apiId, array $payload, ?CardEpisode $episode): Card
     {
-        if (!$payload || !isset($payload['id'])) {
+        if (isset($this->cardCache[$apiId])) {
+            $this->updated++;
+
+            return $this->cardCache[$apiId];
+        }
+
+        $repository = $this->entityManager->getRepository(Card::class);
+        $card = $repository->findOneBy(['apiId' => $apiId]);
+
+        if (!$card && !empty($payload['tcg_player_id'])) {
+            $card = $repository->findOneBy(['tcgplayerId' => (int) $payload['tcg_player_id']]);
+        }
+
+        $cardmarketId = $this->primaryCardmarketId($payload);
+        if (!$card && $cardmarketId !== null) {
+            $card = $repository->findOneBy(['cardmarketId' => $cardmarketId]);
+        }
+
+        $collectorNumber = trim((string) ($payload['fixed_properties']['collector_number'] ?? ''));
+        if (!$card && $episode && $collectorNumber !== '') {
+            $card = $repository->findOneBy([
+                'episode' => $episode,
+                'cardNumber' => $collectorNumber,
+                'name' => (string) ($payload['name'] ?? 'Unknown card'),
+            ]);
+        }
+
+        if ($card) {
+            $this->updated++;
+        } else {
+            $card = new Card();
+            $this->created++;
+        }
+
+        $this->cardCache[$apiId] = $card;
+
+        return $card;
+    }
+
+    private function extractLanguages(array $payload): array
+    {
+        foreach ($payload['editable_properties'] ?? [] as $property) {
+            if (($property['name'] ?? null) !== 'onepiece_language') {
+                continue;
+            }
+
+            return array_values(array_map(
+                fn (string $language): string => match ($language) {
+                    'en' => 'English',
+                    'fr' => 'French',
+                    'jp' => 'Japanese',
+                    'zh-CN', 'zh-TW' => 'Chinese',
+                    'kr' => 'Korean',
+                    default => strtoupper($language),
+                },
+                array_filter($property['possible_values'] ?? [], static fn ($value): bool => is_string($value) && $value !== '')
+            ));
+        }
+
+        return [];
+    }
+
+    private function primaryCardmarketId(array $payload): ?int
+    {
+        $ids = array_values(array_filter(
+            $payload['card_market_ids'] ?? [],
+            static fn ($value): bool => is_numeric($value)
+        ));
+
+        return $ids !== [] ? (int) $ids[0] : null;
+    }
+
+    private function buildDisplayName(string $name, string $collectorNumber): ?string
+    {
+        $name = trim($name);
+
+        if ($collectorNumber === '') {
+            return $name !== '' ? $name : null;
+        }
+
+        return sprintf('%s - %s', $name, $collectorNumber);
+    }
+
+    private function normalizeRarity(mixed $rarity): ?string
+    {
+        return match (strtolower(trim((string) $rarity))) {
+            'common' => 'Common',
+            'uncommon' => 'Uncommon',
+            'rare' => 'Rare',
+            'super rare' => 'Super Rare',
+            'secret rare' => 'Secret Rare',
+            'leader' => 'Leader',
+            'alternate art' => 'Alternate Art',
+            'don!!' => 'DON!!',
+            default => $this->nullableString($rarity),
+        };
+    }
+
+    private function resolveImageUrl(array $payload): ?string
+    {
+        $imageUrl = $this->nullableString($payload['image_url'] ?? null);
+
+        if ($imageUrl !== null) {
+            return $imageUrl;
+        }
+
+        $relativeUrl = $this->nullableString($payload['image']['preview']['url'] ?? $payload['image']['show']['url'] ?? $payload['image']['url'] ?? null);
+
+        return $relativeUrl !== null ? 'https://cardtrader.com' . $relativeUrl : null;
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : null;
+    }
+
+    private function boundedNullableString(mixed $value, int $maxLength): ?string
+    {
+        $value = $this->nullableString($value);
+
+        if ($value === null) {
             return null;
         }
 
-        $apiId = (int) $payload['id'];
-
-        if (isset($this->artistCache[$apiId])) {
-            $artist = $this->artistCache[$apiId];
-        } else {
-            $artist = $this->entityManager->getRepository(CardArtist::class)->findOneBy(['apiId' => $apiId]) ?? new CardArtist();
-            $this->artistCache[$apiId] = $artist;
-        }
-
-        $artist
-            ->setApiId($apiId)
-            ->setName((string) ($payload['name'] ?? 'Unknown artist'))
-            ->setSlug($payload['slug'] ?? null);
-
-        $this->entityManager->persist($artist);
-
-        return $artist;
+        return mb_substr($value, 0, $maxLength);
     }
 
-    private function upsertPrice(Card $card, array $payload): void
+    private function slugify(string $value): ?string
     {
-        $apiId = $card->getApiId();
+        $value = strtolower(trim($value));
+        $value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? '';
+        $value = trim($value, '-');
 
-        if (isset($this->priceCache[$apiId])) {
-            $price = $this->priceCache[$apiId];
-        } else {
-            $price = $this->entityManager->getRepository(CardPrice::class)->findOneBy(['card' => $card]) ?? new CardPrice();
-            $this->priceCache[$apiId] = $price;
-        }
-
-        $cardmarket = $payload['cardmarket'] ?? [];
-        $tcgPlayer = $payload['tcg_player'] ?? [];
-
-        $price
-            ->setCard($card)
-            ->setCurrency($cardmarket['currency'] ?? $tcgPlayer['currency'] ?? null)
-            ->setLowestNearMint(isset($cardmarket['lowest_near_mint']) ? (float) $cardmarket['lowest_near_mint'] : null)
-            ->setLowestNearMintEuOnly(isset($cardmarket['lowest_near_mint_EU_only']) ? (float) $cardmarket['lowest_near_mint_EU_only'] : null)
-            ->setLowestNearMintFr(isset($cardmarket['lowest_near_mint_FR']) ? (float) $cardmarket['lowest_near_mint_FR'] : null)
-            ->setLowestNearMintFrEuOnly(isset($cardmarket['lowest_near_mint_FR_EU_only']) ? (float) $cardmarket['lowest_near_mint_FR_EU_only'] : null)
-            ->setAverage7d(isset($cardmarket['7d_average']) ? (float) $cardmarket['7d_average'] : null)
-            ->setAverage30d(isset($cardmarket['30d_average']) ? (float) $cardmarket['30d_average'] : null)
-            ->setTcgplayerMarketPrice(isset($tcgPlayer['market_price']) ? (float) $tcgPlayer['market_price'] : null)
-            ->setRawData($payload)
-            ->setUpdatedAt(new \DateTimeImmutable());
-
-        $this->entityManager->persist($price);
-        $this->upsertPriceHistory($card, $price, $payload);
-    }
-
-    private function upsertPriceHistory(Card $card, CardPrice $price, array $payload): void
-    {
-        $capturedOn = new \DateTimeImmutable('today');
-        $history = $this->entityManager->getRepository(CardPriceHistory::class)->findOneBy([
-            'card' => $card,
-            'capturedOn' => $capturedOn,
-        ]) ?? new CardPriceHistory();
-
-        $history
-            ->setCard($card)
-            ->setCapturedOn($capturedOn)
-            ->setCurrency($price->getCurrency())
-            ->setLowestNearMint($price->getLowestNearMint())
-            ->setLowestNearMintEuOnly($price->getLowestNearMintEuOnly())
-            ->setLowestNearMintFr($price->getLowestNearMintFr())
-            ->setLowestNearMintFrEuOnly($price->getLowestNearMintFrEuOnly())
-            ->setAverage7d($price->getAverage7d())
-            ->setAverage30d($price->getAverage30d())
-            ->setTcgplayerMarketPrice($price->getTcgplayerMarketPrice())
-            ->setRawData($payload);
-
-        $this->entityManager->persist($history);
+        return $value !== '' ? $value : null;
     }
 }

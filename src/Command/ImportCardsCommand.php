@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'app:cards:import', description: 'Import One Piece cards from the API into the database.')]
+#[AsCommand(name: 'app:cards:import', description: 'Import One Piece cards from CardTrader into the database.')]
 class ImportCardsCommand extends Command
 {
     public function __construct(
@@ -22,7 +22,7 @@ class ImportCardsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('pages', null, InputOption::VALUE_REQUIRED, 'Limit number of pages to import')
+            ->addOption('pages', null, InputOption::VALUE_REQUIRED, 'Limit number of CardTrader expansions to import')
             ->addOption('flush-every', null, InputOption::VALUE_REQUIRED, 'Flush every N cards', 100);
     }
 
@@ -35,10 +35,10 @@ class ImportCardsCommand extends Command
         $stats = $this->cardImporter->import(
             $pageLimit,
             $flushEvery,
-            static fn (int $page, int $totalPages) => $io->writeln(sprintf('Imported page %d/%d', $page, $totalPages))
+            static fn (int $page, int $totalPages, string $label) => $io->writeln(sprintf('Imported expansion %d/%d: %s', $page, $totalPages, $label))
         );
         $io->success(sprintf(
-            'Imported %d cards from the API: %d new, %d updated.',
+            'Imported %d cards from CardTrader: %d new, %d updated.',
             $stats['seen'],
             $stats['created'],
             $stats['updated']

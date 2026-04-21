@@ -12,4 +12,12 @@ class BlogTopicRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, BlogTopic::class);
     }
+
+    public function findOrdered(): array
+    {
+        return $this->createQueryBuilder('t')
+            ->orderBy('t.title', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

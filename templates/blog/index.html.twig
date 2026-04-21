@@ -6,15 +6,15 @@
 <section class="home-hero">
     <p class="eyebrow">Blog</p>
     <h1>Choose a discussion room.</h1>
-    <p>Trading and prices on one side, gameplay on the other.</p>
+    <p>Pick a room, post with your name, and keep the conversation going in the database.</p>
 </section>
 
 <section class="topic-grid">
     {% for topic in topics %}
-        <div class="detail-panel topic-card" data-topic="{{ topic.slug }}">
+        <div class="detail-panel topic-card">
             <h2>{{ topic.title }}</h2>
             <p>{{ topic.description }}</p>
-            <a class="card-detail-link" href="{{ path('blog_topic', { slug: topic.slug }) }}">{{ topic.button }}</a>
+            <a class="card-detail-link" href="{{ path('blog_topic', { slug: topic.slug }) }}">Open discussion</a>
         </div>
     {% endfor %}
 </section>
