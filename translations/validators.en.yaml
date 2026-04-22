@@ -1,0 +1,11 @@
+validators:
+  email_required: Enter your email address.
+  email_invalid: Use a valid email address.
+  email_taken: An account already uses this email address.
+  username_required: Choose a username.
+  username_taken: This username is already taken.
+  username_format: Use only letters, numbers, hyphens and underscores for your username.
+  password_required: Choose a password.
+  password_min: Your password should be at least {{ limit }} characters.
+  comment_required: Write a message before posting.
+  topic_title_required: Write a title before posting.

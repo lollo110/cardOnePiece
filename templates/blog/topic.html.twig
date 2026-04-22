@@ -1,41 +1,62 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ topic.title }}{% endblock %}
+{% block title %}{{ topicView.title }}{% endblock %}
 
 {% block body %}
-<a class="back-link" href="{{ path('blog') }}">Back to blog</a>
+<a class="back-link" href="{{ path('blog') }}">{{ 'blog.back'|trans }}</a>
 
-<section class="home-hero" id="discussion">
-    <p class="eyebrow">Blog</p>
-    <h1>{{ topic.title }}</h1>
-    <p>{{ topic.description }}</p>
+<section class="home-hero">
+    <p class="eyebrow">{{ 'nav.blog'|trans }}</p>
+    <h1>{{ topicView.title }}</h1>
+    <p>{{ topicView.description }}</p>
 </section>
 
-<section class="detail-panel topic-card">
-    <h2>Discussion</h2>
+<section class="detail-panel forum-layout">
+    <div class="forum-section">
+        <h2>{{ 'blog.room.start_heading'|trans }}</h2>
 
-    <form class="comment-form" method="post">
-        <input type="hidden" name="_token" value="{{ csrf_token('blog_comment_' ~ topic.id) }}">
-        <label>
-            Your name
-            <input type="text" value="{{ commentAuthorName }}" readonly>
-        </label>
-        <label>
-            Your message
-            <textarea name="content" rows="4" maxlength="2000" minlength="3" required placeholder="Write something about {{ topic.title }}"></textarea>
-        </label>
-        <button type="submit">Post</button>
-    </form>
+        <form class="comment-form" method="post">
+            <input type="hidden" name="_token" value="{{ csrf_token('blog_thread_' ~ topic.id) }}">
+            <label>
+                {{ 'comments.display_name'|trans }}
+                <input type="text" value="{{ commentAuthorName }}" readonly>
+            </label>
+            <label>
+                {{ 'blog.thread.title_label'|trans }}
+                <input type="text" name="title" maxlength="160" minlength="3" required placeholder="{{ 'blog.thread.title_placeholder'|trans }}">
+            </label>
+            <label>
+                {{ 'comments.your_message'|trans }}
+                <textarea name="content" rows="5" maxlength="4000" minlength="3" required placeholder="{{ 'blog.thread.message_placeholder'|trans({'%topic%': topicView.title|lower}) }}"></textarea>
+            </label>
+            <button type="submit">{{ 'blog.thread.create'|trans }}</button>
+        </form>
+    </div>
 
-    <div class="comment-list">
-        {% for comment in comments %}
-            <article class="comment-item">
-                <p>{{ comment.content }}</p>
-                <small>{{ comment.authorName }} - {{ comment.createdAt|date('Y-m-d H:i') }}</small>
-            </article>
-        {% else %}
-            <p class="muted">No messages yet.</p>
-        {% endfor %}
+    <div class="forum-section" id="topics">
+        <h2>{{ 'blog.room.topics_heading'|trans }}</h2>
+
+        <div class="forum-thread-list">
+            {% for thread in threads %}
+                <article class="forum-thread-card">
+                    <div class="forum-thread-meta">
+                        <small>{{ thread.authorName }} - {{ thread.createdAt|date('Y-m-d H:i') }}</small>
+                        <small>{{ 'blog.thread.last_activity'|trans }} {{ thread.lastActivityAt|date('Y-m-d H:i') }}</small>
+                    </div>
+                    <h3>{{ thread.title }}</h3>
+                    <p>
+                        {% if thread.content|length > 220 %}
+                            {{ thread.content|slice(0, 220) ~ '...' }}
+                        {% else %}
+                            {{ thread.content }}
+                        {% endif %}
+                    </p>
+                    <a class="card-detail-link" href="{{ path('blog_thread', { slug: topic.slug, threadId: thread.id }) }}">{{ 'blog.thread.open'|trans }}</a>
+                </article>
+            {% else %}
+                <p class="muted">{{ 'blog.room.empty'|trans }}</p>
+            {% endfor %}
+        </div>
     </div>
 </section>
 {% endblock %}

@@ -38,7 +38,7 @@ class CardComment
     private string $language = 'english';
 
     #[ORM\Column(type: 'text')]
-    #[Assert\NotBlank(message: 'Write a message before posting.')]
+    #[Assert\NotBlank(message: 'validators.comment_required')]
     #[Assert\Length(min: 3, max: 2000)]
     private string $content = '';
 

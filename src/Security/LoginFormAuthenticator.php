@@ -41,11 +41,11 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
                 $user = $this->userRepository->loadUserByIdentifier($userIdentifier);
 
                 if ($user === null) {
-                    throw new CustomUserMessageAuthenticationException('No account matches that email or username.');
+                    throw new CustomUserMessageAuthenticationException('auth.error.not_found');
                 }
 
                 if (!$user->hasPassword()) {
-                    throw new CustomUserMessageAuthenticationException('This account does not have a password sign-in available.');
+                    throw new CustomUserMessageAuthenticationException('auth.error.no_password');
                 }
 
                 return $user;

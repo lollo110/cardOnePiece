@@ -1,13 +1,13 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Sign in{% endblock %}
+{% block title %}{{ 'auth.sign_in'|trans }}{% endblock %}
 
 {% block body %}
 <section class="auth-shell">
     <div class="detail-panel auth-panel">
-        <p class="eyebrow">Welcome back</p>
-        <h1>Sign in</h1>
-        <p class="muted">Use your email or username to access your account.</p>
+        <p class="eyebrow">{{ 'auth.welcome_back'|trans }}</p>
+        <h1>{{ 'auth.sign_in'|trans }}</h1>
+        <p class="muted">{{ 'auth.login.description'|trans }}</p>
 
         {% if error %}
             <p class="message message-error">{{ error.messageKey|trans(error.messageData, 'security') }}</p>
@@ -15,18 +15,18 @@
 
         <form method="post" class="auth-form">
             <label>
-                Email or username
+                {{ 'auth.identifier'|trans }}
                 <input type="text" name="_username" value="{{ lastUsername }}" autocomplete="username" required maxlength="180">
             </label>
             <label>
-                Password
+                {{ 'auth.password'|trans }}
                 <input type="password" name="_password" autocomplete="current-password" required>
             </label>
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-            <button type="submit">Sign in</button>
+            <button type="submit">{{ 'auth.sign_in'|trans }}</button>
         </form>
 
-        <p class="auth-switch">No account yet? <a href="{{ path('app_register') }}">Create one</a></p>
+        <p class="auth-switch">{{ 'auth.login.switch'|trans }} <a href="{{ path('app_register') }}">{{ 'auth.create_account'|trans }}</a></p>
     </div>
 </section>
 {% endblock %}

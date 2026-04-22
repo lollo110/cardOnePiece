@@ -12,18 +12,20 @@ class CardService
     ) {
     }
 
-    public function searchCards(?string $query = null, int $page = 1, string $sort = 'relevance', ?string $rarity = null): array
+    public function searchCards(?string $query = null, int $page = 1, string $sort = 'relevance', ?string $rarity = null, ?string $collection = null): array
     {
         $query = trim((string) $query);
         $rarity = trim((string) $rarity);
+        $collection = trim((string) $collection);
         $page = max(1, $page);
         $perPage = 20;
         $sort = $this->normalizeSort($sort);
         $normalizedQuery = $query !== '' ? $query : null;
         $normalizedRarity = $rarity !== '' ? $rarity : null;
+        $normalizedCollection = $collection !== '' ? $collection : null;
 
-        if ($normalizedRarity !== null) {
-            $cards = $this->cardRepository->searchAll($normalizedQuery, $sort, $normalizedRarity);
+        if ($normalizedRarity !== null || $normalizedCollection !== null) {
+            $cards = $this->cardRepository->searchAll($normalizedQuery, $sort, $normalizedRarity, $normalizedCollection);
             $totalResults = count($cards);
 
             return [
@@ -60,6 +62,13 @@ class CardService
         return $this->cardRepository->findRarityOptions($query !== '' ? $query : null);
     }
 
+    public function collectionOptions(?string $query = null): array
+    {
+        $query = trim((string) $query);
+
+        return $this->cardRepository->findCollectionOptions($query !== '' ? $query : null);
+    }
+
     public function recentCards(int $limit = 8): array
     {
         return array_map(
@@ -75,12 +84,6 @@ class CardService
 
     public function suggestCards(string $query): array
     {
-        $suggestions = $this->suggestKnownCharacters($query);
-
-        if ($suggestions) {
-            return $suggestions;
-        }
-
         return $this->cardRepository->findSuggestions($query);
     }
 
@@ -133,109 +136,14 @@ class CardService
             'tcggo_url' => $card->getTcggoUrl(),
             'links' => $card->getLinks(),
             'languages' => $rawData['languages'] ?? [],
+            'average_near_mint_price_cents' => $card->getAverageNearMintPriceCents(),
+            'average_near_mint_price' => $card->getAverageNearMintPriceCents() !== null
+                ? number_format($card->getAverageNearMintPriceCents() / 100, 2, '.', '')
+                : null,
+            'price_updated_at' => $card->getPriceUpdatedAt()?->format(\DateTimeInterface::ATOM),
             'source' => 'CardTrader',
             'updated_at' => $card->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ];
     }
 
-    private function normalizeName(string $value): string
-    {
-        return preg_replace('/[^a-z0-9]+/', '', strtolower($value)) ?? '';
-    }
-
-    private function suggestKnownCharacters(string $query): array
-    {
-        $normalized = $this->normalizeName($query);
-
-        if (strlen($normalized) < 2) {
-            return [];
-        }
-
-        $suggestions = [];
-
-        foreach ($this->characterAliases() as $alias => $character) {
-            $characterName = $this->normalizeName($character);
-            $score = null;
-
-            if (str_starts_with($alias, $normalized)) {
-                $score = 0;
-            } elseif (str_starts_with($characterName, $normalized)) {
-                $score = 1;
-            } elseif (str_contains($alias, $normalized)) {
-                $score = 2;
-            } elseif (str_contains($characterName, $normalized)) {
-                $score = 3;
-            }
-
-            if ($score !== null && (!isset($suggestions[$character]) || $score < $suggestions[$character])) {
-                $suggestions[$character] = $score;
-            }
-        }
-
-        asort($suggestions);
-
-        return array_slice(array_keys($suggestions), 0, 8);
-    }
-
-    private function characterAliases(): array
-    {
-        return [
-            'luffy' => 'Monkey.D.Luffy',
-            'monkey' => 'Monkey.D.Luffy',
-            'monkeyd' => 'Monkey.D.Luffy',
-            'monkeydluffy' => 'Monkey.D.Luffy',
-            'dluffy' => 'Monkey.D.Luffy',
-            'zoro' => 'Roronoa Zoro',
-            'roronoa' => 'Roronoa Zoro',
-            'roronoazoro' => 'Roronoa Zoro',
-            'nami' => 'Nami',
-            'usopp' => 'Usopp',
-            'sanji' => 'Sanji',
-            'chopper' => 'Tony Tony.Chopper',
-            'tonytonychopper' => 'Tony Tony.Chopper',
-            'robin' => 'Nico Robin',
-            'nico' => 'Nico Robin',
-            'nicorobin' => 'Nico Robin',
-            'franky' => 'Franky',
-            'brook' => 'Brook',
-            'jinbe' => 'Jinbe',
-            'jimbei' => 'Jinbe',
-            'law' => 'Trafalgar Law',
-            'trafalgar' => 'Trafalgar Law',
-            'trafalgarlaw' => 'Trafalgar Law',
-            'trafalgardwaterlaw' => 'Trafalgar.D.Water Law',
-            'kid' => 'Eustass Kid',
-            'eustass' => 'Eustass Kid',
-            'eustasskid' => 'Eustass Kid',
-            'ace' => 'Portgas.D.Ace',
-            'portgas' => 'Portgas.D.Ace',
-            'portgasdace' => 'Portgas.D.Ace',
-            'sabo' => 'Sabo',
-            'shanks' => 'Shanks',
-            'hancock' => 'Boa Hancock',
-            'boa' => 'Boa Hancock',
-            'boahancock' => 'Boa Hancock',
-            'doflamingo' => 'Donquixote Doflamingo',
-            'donquixote' => 'Donquixote Doflamingo',
-            'donquixotedoflamingo' => 'Donquixote Doflamingo',
-            'mihawk' => 'Dracule Mihawk',
-            'dracule' => 'Dracule Mihawk',
-            'draculemihawk' => 'Dracule Mihawk',
-            'crocodile' => 'Crocodile',
-            'buggy' => 'Buggy',
-            'smoker' => 'Smoker',
-            'yamato' => 'Yamato',
-            'kaido' => 'Kaido',
-            'bigmom' => 'Charlotte Linlin',
-            'linlin' => 'Charlotte Linlin',
-            'charlottelinlin' => 'Charlotte Linlin',
-            'katakuri' => 'Charlotte Katakuri',
-            'charlottekatakuri' => 'Charlotte Katakuri',
-            'roger' => 'Gol.D.Roger',
-            'gol' => 'Gol.D.Roger',
-            'gold' => 'Gol.D.Roger',
-            'golroger' => 'Gol.D.Roger',
-            'goldroger' => 'Gol.D.Roger',
-        ];
-    }
 }

@@ -1,12 +1,12 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Blog{% endblock %}
+{% block title %}{{ 'nav.blog'|trans }}{% endblock %}
 
 {% block body %}
 <section class="home-hero">
-    <p class="eyebrow">Blog</p>
-    <h1>Choose a discussion room.</h1>
-    <p>Pick a room, post with your name, and keep the conversation going in the database.</p>
+    <p class="eyebrow">{{ 'nav.blog'|trans }}</p>
+    <h1>{{ 'blog.hero.title'|trans }}</h1>
+    <p>{{ 'blog.hero.description'|trans }}</p>
 </section>
 
 <section class="topic-grid">
@@ -14,7 +14,7 @@
         <div class="detail-panel topic-card">
             <h2>{{ topic.title }}</h2>
             <p>{{ topic.description }}</p>
-            <a class="card-detail-link" href="{{ path('blog_topic', { slug: topic.slug }) }}">Open discussion</a>
+            <a class="card-detail-link" href="{{ path('blog_topic', { slug: topic.slug }) }}">{{ topic.button }}</a>
         </div>
     {% endfor %}
 </section>

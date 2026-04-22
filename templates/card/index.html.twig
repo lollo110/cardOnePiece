@@ -1,22 +1,25 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Recherche One Piece{% endblock %}
+{% block title %}{{ 'cards.page_title'|trans }}{% endblock %}
 
 {% block body %}
 <section class="search-section">
-    <h1>Collection One Piece</h1>
+    <h1>{{ 'cards.heading'|trans }}</h1>
 
     <form method="get" class="search-form" id="collection-options">
         <input type="hidden" name="q" value="{{ query }}">
         {% if rarity %}
             <input type="hidden" name="rarity" value="{{ rarity }}">
         {% endif %}
-        <select name="sort" aria-label="Sort cards">
-            <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>Relevance</option>
-            <option value="recent" {% if sort == 'recent' %}selected{% endif %}>Recently updated</option>
-            <option value="name_desc" {% if sort == 'name_desc' %}selected{% endif %}>Name Z-A</option>
+        {% if collection %}
+            <input type="hidden" name="collection" value="{{ collection }}">
+        {% endif %}
+        <select name="sort" aria-label="{{ 'cards.sort.label'|trans }}">
+            <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>{{ 'cards.sort.relevance'|trans }}</option>
+            <option value="recent" {% if sort == 'recent' %}selected{% endif %}>{{ 'cards.sort.recent'|trans }}</option>
+            <option value="name_desc" {% if sort == 'name_desc' %}selected{% endif %}>{{ 'cards.sort.name_desc'|trans }}</option>
         </select>
-        <button>Rechercher</button>
+        <button>{{ 'cards.update_view'|trans }}</button>
     </form>
 </section>
 
@@ -26,16 +29,19 @@
     data-query="{{ query }}"
     data-sort="{{ sort }}"
     data-rarity="{{ rarity }}"
+    data-collection="{{ collection }}"
 >
     {% include 'card/_results.html.twig' with {
         results: results,
         query: query,
         sort: sort,
         rarity: rarity,
+        collection: collection,
         paging: paging,
         totalResults: totalResults,
         error: error,
         rarityOptions: rarityOptions,
+        collectionOptions: collectionOptions,
     } only %}
 </div>
 {% endblock %}

@@ -1,0 +1,3 @@
+site_pages:
+    resource: ../../src/Controller/SiteController.php
+    type: attribute

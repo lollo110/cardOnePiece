@@ -1,0 +1,4 @@
+auth:
+  error:
+    not_found: Aucun compte ne correspond à cet e-mail ou à ce nom d’utilisateur.
+    no_password: Ce compte ne dispose pas d’une connexion par mot de passe.

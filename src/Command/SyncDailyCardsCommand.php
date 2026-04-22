@@ -55,10 +55,11 @@ class SyncDailyCardsCommand extends Command
         $this->entityManager->flush();
 
         $io->success(sprintf(
-            'Daily card sync finished: %d cards checked, %d new, %d updated.',
+            'Daily card sync finished: %d cards checked, %d new, %d updated, %d prices refreshed.',
             $stats['seen'],
             $stats['created'],
-            $stats['updated']
+            $stats['updated'],
+            $stats['prices_updated'] ?? 0,
         ));
 
         return Command::SUCCESS;

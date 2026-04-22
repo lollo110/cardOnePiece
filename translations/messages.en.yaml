@@ -1,0 +1,284 @@
+nav:
+  home: Home
+  collection: Collection
+  blog: Blog
+
+locale:
+  switch: Switch language
+
+search:
+  placeholder: Search cards by name or code
+  button: Search
+  view_all: View all results
+
+auth:
+  hello: "Hi, %username%"
+  sign_in: Sign in
+  sign_up: Sign up
+  sign_out: Sign out
+  create_account: Create an account
+  welcome_back: Welcome back
+  join: Join the crew
+  identifier: Email or username
+  password: Password
+  login:
+    description: Sign in with your email or username to join discussions under your account.
+    switch: New here?
+  register:
+    title: Create your account
+    description: Create an account to post under your username across card pages and discussion rooms.
+    switch: Already registered?
+    success: Welcome aboard. Your account is ready.
+
+form:
+  email: Email
+  username: Username
+  password: Password
+  email_placeholder: you@example.com
+  username_placeholder: your-name
+  password_placeholder: At least 8 characters
+
+common:
+  na: N/A
+  yes: Yes
+  no: No
+
+home:
+  hero:
+    title: Explore the One Piece card game and join the conversation.
+    description: Browse the collection, open any card page, and share thoughts about collecting, trading, and playing.
+  recent:
+    title: Recently updated cards
+    link: View collection
+  rooms:
+    title: Discussion rooms
+    link: View discussions
+
+blog:
+  section: Discussion
+  hero:
+    title: Choose a discussion room.
+    description: Join the trading room for collection talk or the game room for deckbuilding, matchups, and tournament discussion.
+  back: Back to discussions
+  discussion:
+    heading: Discussion
+  room:
+    start_heading: Start a new topic
+    topics_heading: Topics in this room
+    empty: No topics yet. Start the first discussion.
+  topic:
+    placeholder: "Share your thoughts about %topic%"
+    default:
+      button: Enter room
+    trading:
+      title: Trading & collection
+      description: Talk about trades, collection goals, favorite cards, recent pickups, and binder projects.
+      button: Enter trading room
+    game:
+      title: Game
+      description: Talk about decks, matchups, rules, tournament results, and the current format.
+      button: Enter game room
+  thread:
+    title_label: Topic title
+    title_placeholder: Write a clear title for your topic
+    message_placeholder: "Open the discussion in %topic%"
+    create: Create topic
+    open: Open topic
+    last_activity: "Last activity:"
+    back_to_room: Back to the room
+    hero_description: Read the discussion and post a reply below.
+    original_post: Original post
+    reply_heading: Replies
+    reply_placeholder: "Reply to %title%"
+    reply_to_comment: Reply to this answer
+    reply_to_author: "Reply to %author%"
+    reply_submit: Post reply
+    replies_empty: No replies yet. Be the first to answer.
+    invalid_parent: The reply target could not be found.
+    notice:
+      topic_live: Your topic is live.
+      reply_live: Your reply is live.
+
+comments:
+  display_name: Display name
+  your_message: Your message
+  your_comment: Your comment
+  post: Post comment
+  empty: No comments yet. Start the conversation.
+  author:
+    guest_prefix: Guest
+  error:
+    csrf: Unable to post your message right now.
+    empty: Write a message before posting.
+  notice:
+    live: Your message is live.
+    hidden: Your comment is hidden for review because it may contain inappropriate language.
+
+discussion:
+  heading: Card discussion
+  intro: Choose a topic and a language to read or write only in that thread.
+  topic_label: Topic
+  language: Language
+  no_comments: No comments yet for this topic and language.
+  status:
+    loading: "Loading %topic% comments for %language%..."
+    showing: "Showing %topic% comments for %language%."
+    posting: "Posting in %topic% / %language%..."
+  error:
+    load: Unable to load comments.
+    post: Unable to post comment.
+  topic:
+    trading: Trading
+    game: Game
+
+cards:
+  page_title: Card Collection
+  heading: Card collection
+  update_view: Update view
+  empty: No cards matched your search.
+  total: "%count% cards"
+  filtered: filtered results
+  page_count: "page %current% / %total%"
+  back: Back to collection
+  sort:
+    label: Sort cards
+    relevance: Relevance
+    recent: Recently updated
+    name_desc: Name Z-A
+  filter:
+    rarity: Rarity
+    all_rarities: All rarities
+    collection: Collection
+    all_collections: All collections
+    reset: Reset filters
+  pagination:
+    aria: Collection pages
+    first: First
+    previous: Previous
+    next: Next
+    last: Last
+    summary: "Page %current% of %total%"
+
+card:
+  view: View card
+  comment:
+    placeholder: "Share a note about %card%"
+  info:
+    heading: Card information
+  set:
+    heading: Set / episode
+  external_ids:
+    heading: External IDs
+    cardtrader: CardTrader ID
+    tcgplayer: TCGplayer ID
+    cardmarket: Cardmarket ID
+  fields:
+    name: Name
+    number: Card number
+    set: Set
+    set_code: Set code
+    rarity: Rarity
+    version: Version
+    average_near_mint: Average Near Mint
+    price_updated: Price updated
+    languages: Languages
+    source: Source
+  comments:
+    error:
+      not_found: Card not found.
+      invalid_discussion: Invalid discussion type.
+      invalid_language: Invalid language.
+
+footer:
+  tagline: An independent One Piece card community for browsing cards, following sets, and sharing opinions about collecting and playing.
+  explore: Explore
+  account: Account
+  legal: Legal
+  contact: Contact
+  bottom: Independent fan project focused on community discussion and card discovery.
+
+site:
+  name: Pirate Card Blog
+  about:
+    title: About Pirate Card Blog
+    intro: Pirate Card Blog is a community site dedicated to discovering cards, following sets, and sharing discussion around the One Piece Card Game.
+    section_1:
+      title: What you can do here
+      paragraph_1: Browse the card collection, search by name or card code, and open dedicated detail pages for each card.
+      paragraph_2: Take part in community discussions focused on collecting, trading, deckbuilding, matchups, and the broader game.
+    section_2:
+      title: Community approach
+      paragraph_1: The goal is to keep the site welcoming, useful, and easy to use for both collectors and players.
+      paragraph_2: Comments may be moderated to limit abusive, hateful, or inappropriate content and preserve the quality of discussion.
+    section_3:
+      title: Independent project
+      paragraph_1: Pirate Card Blog is an independent fan project and is not an official website of Bandai, Toei, Shueisha, or One Piece Card Game publishers.
+      paragraph_2: Card names, artwork, and trademarks remain the property of their respective owners.
+  contact:
+    title: Contact and moderation
+    intro: Questions about moderation, published comments, or account access can be handled through the site team.
+    section_1:
+      title: Comment and moderation requests
+      paragraph_1: If a comment should be reviewed, hidden, or removed, include the card page or discussion room concerned and enough detail for the request to be identified quickly.
+      paragraph_2: Messages linked to moderation should be clear, factual, and include the date or visible author name whenever possible.
+    section_2:
+      title: Account questions
+      paragraph_1: If you cannot sign in or access your account, first verify your login details on the sign in page.
+      paragraph_2: Before launch, this page should include the public contact email or support address used for account and privacy requests.
+  legal:
+    title: Legal notice
+    intro: This page presents the legal information relating to the publication and operation of Pirate Card Blog.
+    section_1:
+      title: Site publisher
+      paragraph_1: "Site name: Pirate Card Blog."
+      paragraph_2: "Publication manager: the operator responsible for publishing and managing the site."
+      paragraph_3: Before the site goes online, this section should be completed with the real publisher identity, postal address, and contact details required for publication.
+    section_2:
+      title: Hosting
+      paragraph_1: The production hosting provider must be identified with its company name, postal address, and contact details.
+      paragraph_2: If the hosting provider changes, this page should be updated so the information remains accurate and accessible.
+    section_3:
+      title: Intellectual property
+      paragraph_1: The website structure, original editorial texts, and original community contributions are protected by the applicable intellectual property rules.
+      paragraph_2: One Piece names, visuals, and related trademarks remain the property of their respective owners and are referenced here for identification and discussion purposes only.
+  privacy:
+    title: Privacy policy
+    intro: This page explains how personal data may be handled when visitors browse the site, create an account, and publish comments.
+    section_1:
+      title: Data collected
+      paragraph_1: When an account is created, the site stores the information needed to manage access, including the email address, username, and hashed password.
+      paragraph_2: When comments are posted, the site stores the published content, the displayed author name, and the technical information needed to manage the discussion.
+    section_2:
+      title: Purpose of processing
+      paragraph_1: Account data is used for authentication, account security, and community management.
+      paragraph_2: Comment data is used to publish discussions, apply moderation rules, and maintain the safety and readability of the site.
+    section_3:
+      title: Your rights
+      paragraph_1: Users may request access, correction, or deletion of their personal data, subject to legal or technical limits linked to account security and moderation history.
+      paragraph_2: Before launch, this page should include the contact channel used to handle privacy requests and exercise data protection rights.
+  terms:
+    title: Terms of use
+    intro: These terms describe the main rules for using Pirate Card Blog and participating in its community spaces.
+    section_1:
+      title: Acceptable use
+      paragraph_1: Users must not publish illegal, hateful, racist, threatening, defamatory, or deliberately harmful content.
+      paragraph_2: Spam, impersonation, and attempts to disrupt the service or misuse accounts are not permitted.
+    section_2:
+      title: Community content
+      paragraph_1: Users remain responsible for the content they publish.
+      paragraph_2: The site may moderate, hide, or remove comments that violate the rules or undermine the quality of the community space.
+    section_3:
+      title: Service availability
+      paragraph_1: The site is provided as available and may be changed, paused, or updated at any time.
+      paragraph_2: Access may be limited or suspended in the event of abuse, maintenance, or security issues.
+  cookies:
+    title: Cookies
+    intro: This page explains the use of cookies and similar storage technologies on Pirate Card Blog.
+    section_1:
+      title: Essential cookies
+      paragraph_1: The site may use essential session cookies to keep users signed in, protect forms, and maintain secure browsing sessions.
+      paragraph_2: These cookies are necessary for core features such as account access, session security, and protected actions.
+    section_2:
+      title: Additional tools
+      paragraph_1: Temporary technical storage may also be used to keep parts of the interface working smoothly during navigation.
+      paragraph_2: If analytics, advertising, or third-party audience tools are added later, this page should be updated before those tools are enabled.

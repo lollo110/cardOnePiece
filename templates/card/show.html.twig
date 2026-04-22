@@ -13,9 +13,9 @@
             {% endfor %}
         </dl>
     {% elseif value is same as(null) %}
-        <span class="muted">N/A</span>
+        <span class="muted">{{ 'common.na'|trans }}</span>
     {% elseif value is same as(true) or value is same as(false) %}
-        {{ value ? 'Yes' : 'No' }}
+        {{ value ? 'common.yes'|trans : 'common.no'|trans }}
     {% else %}
         {{ value }}
     {% endif %}
@@ -26,7 +26,7 @@
 {% block title %}{{ card.name_numbered ?? card.name }}{% endblock %}
 
 {% block body %}
-<a class="back-link" href="{{ path('cards') }}">Back to collection</a>
+<a class="back-link" href="{{ path('cards') }}">{{ 'cards.back'|trans }}</a>
 
 <section class="detail-hero">
     <div>
@@ -46,19 +46,20 @@
         </div>
 
         <dl class="detail-list">
-            <div><dt>Name</dt><dd>{{ card.name ?? 'N/A' }}</dd></div>
-            <div><dt>Card number</dt><dd>{{ card.card_number ?? 'N/A' }}</dd></div>
-            <div><dt>Set</dt><dd>{{ card.episode.name ?? 'N/A' }}</dd></div>
-            <div><dt>Set code</dt><dd>{{ card.episode.code ?? 'N/A' }}</dd></div>
-            <div><dt>Rarity</dt><dd>{{ card.rarity ?? 'N/A' }}</dd></div>
-            <div><dt>Languages</dt><dd>{{ card.languages is not empty ? card.languages|join(', ') : 'N/A' }}</dd></div>
+            <div><dt>{{ 'card.fields.name'|trans }}</dt><dd>{{ card.name ?? 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.number'|trans }}</dt><dd>{{ card.card_number ?? 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.set'|trans }}</dt><dd>{{ card.episode.name ?? 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.set_code'|trans }}</dt><dd>{{ card.episode.code ?? 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.rarity'|trans }}</dt><dd>{{ card.rarity ?? 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.average_near_mint'|trans }}</dt><dd>{{ card.average_near_mint_price is not null ? '€' ~ card.average_near_mint_price : 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.languages'|trans }}</dt><dd>{{ card.languages is not empty ? card.languages|join(', ') : 'common.na'|trans }}</dd></div>
         </dl>
     </div>
 </section>
 
 <section class="detail-panel comments-panel" id="card-discussion">
-    <h2>Card discussion</h2>
-    <p class="muted">Choose a topic and a language to read or write only in that thread.</p>
+    <h2>{{ 'discussion.heading'|trans }}</h2>
+    <p class="muted">{{ 'discussion.intro'|trans }}</p>
 
     <div
         class="discussion-shell"
@@ -67,10 +68,16 @@
         data-default-discussion="{{ cardCommentOptions.defaultDiscussionType }}"
         data-default-language="{{ cardCommentOptions.defaultLanguage }}"
         data-initial-comments="{{ initialComments|json_encode|e('html_attr') }}"
+        data-no-comments-text="{{ 'discussion.no_comments'|trans }}"
+        data-status-loading="{{ 'discussion.status.loading'|trans({'%topic%': '__TOPIC__', '%language%': '__LANGUAGE__'}) }}"
+        data-status-showing="{{ 'discussion.status.showing'|trans({'%topic%': '__TOPIC__', '%language%': '__LANGUAGE__'}) }}"
+        data-status-posting="{{ 'discussion.status.posting'|trans({'%topic%': '__TOPIC__', '%language%': '__LANGUAGE__'}) }}"
+        data-error-load="{{ 'discussion.error.load'|trans }}"
+        data-error-post="{{ 'discussion.error.post'|trans }}"
     >
         <div class="discussion-toolbar">
             <label class="discussion-select">
-                Topic
+                {{ 'discussion.topic_label'|trans }}
                 <select data-card-discussion-type>
                     {% for key, label in cardCommentOptions.discussionTypes %}
                         <option value="{{ key }}" {% if key == cardCommentOptions.defaultDiscussionType %}selected{% endif %}>{{ label }}</option>
@@ -79,7 +86,7 @@
             </label>
 
             <div class="discussion-languages">
-                <p>Language</p>
+                <p>{{ 'discussion.language'|trans }}</p>
                 <div class="language-button-row">
                     {% for language in cardCommentOptions.languages %}
                         <button
@@ -96,7 +103,7 @@
         </div>
 
         <p class="muted" data-card-discussion-status>
-            Showing {{ cardCommentOptions.discussionTypes[cardCommentOptions.defaultDiscussionType] }} comments for {{ cardCommentOptions.languages|first.label }}.
+            {{ 'discussion.status.showing'|trans({'%topic%': cardCommentOptions.discussionTypes[cardCommentOptions.defaultDiscussionType], '%language%': cardCommentOptions.languages|first.label}) }}
         </p>
 
         <form class="comment-form" data-card-discussion-form>
@@ -104,14 +111,14 @@
             <input type="hidden" name="discussion_type" value="{{ cardCommentOptions.defaultDiscussionType }}" data-card-discussion-type-input>
             <input type="hidden" name="language" value="{{ cardCommentOptions.defaultLanguage }}" data-card-discussion-language-input>
             <label>
-                Your name
+                {{ 'comments.display_name'|trans }}
                 <input type="text" value="{{ commentAuthorName }}" readonly>
             </label>
             <label>
-                Your comment
-                <textarea name="content" rows="4" maxlength="2000" minlength="3" required placeholder="Share a note about {{ card.name_numbered ?? card.name }}"></textarea>
+                {{ 'comments.your_comment'|trans }}
+                <textarea name="content" rows="4" maxlength="2000" minlength="3" required placeholder="{{ 'card.comment.placeholder'|trans({'%card%': card.name_numbered ?? card.name}) }}"></textarea>
             </label>
-            <button type="submit">Post comment</button>
+            <button type="submit">{{ 'comments.post'|trans }}</button>
         </form>
 
         <div class="comment-list" data-card-comments>
@@ -121,7 +128,7 @@
                     <small>{{ comment.authorName }} - {{ comment.createdAt }}</small>
                 </article>
             {% else %}
-                <p class="muted">No comments yet.</p>
+                <p class="muted">{{ 'discussion.no_comments'|trans }}</p>
             {% endfor %}
         </div>
     </div>
@@ -129,28 +136,30 @@
 
 <section class="detail-grid">
     <article class="detail-panel">
-        <h2>Card information</h2>
+        <h2>{{ 'card.info.heading'|trans }}</h2>
         <dl class="detail-list">
-            <div><dt>Name</dt><dd>{{ card.name ?? 'N/A' }}</dd></div>
-            <div><dt>Card number</dt><dd>{{ card.card_number ?? 'N/A' }}</dd></div>
-            <div><dt>Rarity</dt><dd>{{ card.rarity ?? 'N/A' }}</dd></div>
-            <div><dt>Version</dt><dd>{{ card.version ?? 'N/A' }}</dd></div>
-            <div><dt>Languages</dt><dd>{{ card.languages is not empty ? card.languages|join(', ') : 'N/A' }}</dd></div>
-            <div><dt>Source</dt><dd>{{ card.source ?? 'CardTrader' }}</dd></div>
+            <div><dt>{{ 'card.fields.name'|trans }}</dt><dd>{{ card.name ?? 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.number'|trans }}</dt><dd>{{ card.card_number ?? 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.rarity'|trans }}</dt><dd>{{ card.rarity ?? 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.version'|trans }}</dt><dd>{{ card.version ?? 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.average_near_mint'|trans }}</dt><dd>{{ card.average_near_mint_price is not null ? '€' ~ card.average_near_mint_price : 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.price_updated'|trans }}</dt><dd>{{ card.price_updated_at ? card.price_updated_at|date('Y-m-d H:i') : 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.languages'|trans }}</dt><dd>{{ card.languages is not empty ? card.languages|join(', ') : 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.source'|trans }}</dt><dd>{{ card.source ?? 'CardTrader' }}</dd></div>
         </dl>
     </article>
 
     <article class="detail-panel">
-        <h2>Set / episode</h2>
+        <h2>{{ 'card.set.heading'|trans }}</h2>
         {{ cardMacros.render_value(card.episode ?? {}) }}
     </article>
 
     <article class="detail-panel">
-        <h2>External IDs</h2>
+        <h2>{{ 'card.external_ids.heading'|trans }}</h2>
         <dl class="detail-list">
-            <div><dt>CardTrader ID</dt><dd>{{ card.id }}</dd></div>
-            <div><dt>TCGplayer ID</dt><dd>{{ card.tcgplayer_id ?? 'N/A' }}</dd></div>
-            <div><dt>Cardmarket ID</dt><dd>{{ card.cardmarket_id ?? 'N/A' }}</dd></div>
+            <div><dt>{{ 'card.external_ids.cardtrader'|trans }}</dt><dd>{{ card.id }}</dd></div>
+            <div><dt>{{ 'card.external_ids.tcgplayer'|trans }}</dt><dd>{{ card.tcgplayer_id ?? 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.external_ids.cardmarket'|trans }}</dt><dd>{{ card.cardmarket_id ?? 'common.na'|trans }}</dd></div>
         </dl>
     </article>
 </section>

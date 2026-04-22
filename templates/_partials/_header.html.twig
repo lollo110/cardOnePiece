@@ -1,28 +1,42 @@
 <header class="site-header">
-    <a class="site-logo" href="{{ path('app_home') }}">Pirate Card Blog</a>
+    <a class="site-logo" href="{{ path('app_home') }}">{{ 'site.name'|trans }}</a>
 
     <div class="site-meta">
         <nav class="site-nav">
-            <a href="{{ path('app_home') }}">Home</a>
-            <a href="{{ path('cards') }}">Collection</a>
-            <a href="{{ path('blog') }}">Blog</a>
+            <a href="{{ path('app_home') }}">{{ 'nav.home'|trans }}</a>
+            <a href="{{ path('cards') }}">{{ 'nav.collection'|trans }}</a>
+            <a href="{{ path('blog') }}">{{ 'nav.blog'|trans }}</a>
         </nav>
 
         <form method="get" action="{{ path('cards') }}" class="header-search">
             <div class="search-autocomplete">
-                <input type="text" name="q" value="{{ app.request.query.get('q') }}" placeholder="Search a card" autocomplete="off" data-suggest-url="{{ path('cards_suggestions') }}" data-search-input>
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ app.request.query.get('q') }}"
+                    placeholder="{{ 'search.placeholder'|trans }}"
+                    autocomplete="off"
+                    data-suggest-url="{{ path('cards_suggestions') }}"
+                    data-view-all-label="{{ 'search.view_all'|trans }}"
+                    data-search-input
+                >
                 <div class="suggestions" data-suggestions hidden></div>
             </div>
-            <button>Search</button>
+            <button>{{ 'search.button'|trans }}</button>
         </form>
+
+        <div class="site-locale" aria-label="{{ 'locale.switch'|trans }}">
+            <a class="{% if app.request.locale == 'en' %}is-active{% endif %}" href="{{ path('site_switch_locale', { locale: 'en' }) }}">EN</a>
+            <a class="{% if app.request.locale == 'fr' %}is-active{% endif %}" href="{{ path('site_switch_locale', { locale: 'fr' }) }}">FR</a>
+        </div>
 
         <div class="site-auth">
             {% if app.user %}
-                <span class="site-user">Hi, {{ app.user.username }}</span>
-                <a href="{{ path('app_logout') }}">Sign out</a>
+                <span class="site-user">{{ 'auth.hello'|trans({'%username%': app.user.username}) }}</span>
+                <a href="{{ path('app_logout') }}">{{ 'auth.sign_out'|trans }}</a>
             {% else %}
-                <a href="{{ path('app_login') }}">Sign in</a>
-                <a class="site-auth-strong" href="{{ path('app_register') }}">Sign up</a>
+                <a href="{{ path('app_login') }}">{{ 'auth.sign_in'|trans }}</a>
+                <a class="site-auth-strong" href="{{ path('app_register') }}">{{ 'auth.sign_up'|trans }}</a>
             {% endif %}
         </div>
     </div>

@@ -13,6 +13,32 @@ const initializeStructure = () => {
             suggestionsBox.hidden = true;
         };
 
+        const renderSuggestions = (suggestions, query) => {
+            suggestionsBox.innerHTML = '';
+
+            const list = document.createElement('div');
+            list.className = 'suggestions-list';
+
+            suggestions.forEach((suggestion) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = suggestion;
+                list.append(button);
+            });
+
+            const footer = document.createElement('div');
+            footer.className = 'suggestions-footer';
+
+            const viewAllLink = document.createElement('a');
+            viewAllLink.className = 'suggestions-view-all';
+            viewAllLink.href = `${searchInput.form?.action ?? '/cards'}?q=${encodeURIComponent(query)}`;
+            viewAllLink.textContent = searchInput.dataset.viewAllLabel ?? 'View all results';
+
+            footer.append(viewAllLink);
+            suggestionsBox.append(list, footer);
+            suggestionsBox.hidden = false;
+        };
+
         searchInput.addEventListener('input', () => {
             window.clearTimeout(suggestTimeout);
 
@@ -39,14 +65,7 @@ const initializeStructure = () => {
                     return;
                 }
 
-                suggestionsBox.innerHTML = '';
-                suggestions.forEach((suggestion) => {
-                    const button = document.createElement('button');
-                    button.type = 'button';
-                    button.textContent = suggestion;
-                    suggestionsBox.append(button);
-                });
-                suggestionsBox.hidden = false;
+                renderSuggestions(suggestions, query);
             }, 250);
         });
 
@@ -77,6 +96,12 @@ const initializeStructure = () => {
         const form = discussion.querySelector('[data-card-discussion-form]');
         const list = discussion.querySelector('[data-card-comments]');
         const languageButtons = Array.from(discussion.querySelectorAll('[data-card-language-button]'));
+        const noCommentsText = discussion.dataset.noCommentsText ?? 'No comments yet for this topic and language.';
+        const statusLoadingTemplate = discussion.dataset.statusLoading ?? 'Loading __TOPIC__ comments for __LANGUAGE__...';
+        const statusShowingTemplate = discussion.dataset.statusShowing ?? 'Showing __TOPIC__ comments for __LANGUAGE__.';
+        const statusPostingTemplate = discussion.dataset.statusPosting ?? 'Posting in __TOPIC__ / __LANGUAGE__...';
+        const loadErrorText = discussion.dataset.errorLoad ?? 'Unable to load comments.';
+        const postErrorText = discussion.dataset.errorPost ?? 'Unable to post comment.';
 
         let currentDiscussion = discussion.dataset.defaultDiscussion ?? 'trading';
         let currentLanguage = discussion.dataset.defaultLanguage ?? 'english';
@@ -84,6 +109,9 @@ const initializeStructure = () => {
 
         const discussionLabel = () => typeSelect?.selectedOptions[0]?.textContent?.trim() ?? 'Trading';
         const languageLabel = () => languageButtons.find((button) => button.dataset.language === currentLanguage)?.textContent?.trim() ?? currentLanguage;
+        const renderStatus = (template) => template
+            .replaceAll('__TOPIC__', discussionLabel())
+            .replaceAll('__LANGUAGE__', languageLabel());
 
         const setLanguageButtons = () => {
             languageButtons.forEach((button) => {
@@ -101,7 +129,7 @@ const initializeStructure = () => {
             if (!comments.length) {
                 const empty = document.createElement('p');
                 empty.className = 'muted';
-                empty.textContent = 'No comments yet for this topic and language.';
+                empty.textContent = noCommentsText;
                 list.append(empty);
                 return;
             }
@@ -143,7 +171,7 @@ const initializeStructure = () => {
             const url = new URL(commentsUrl, window.location.origin);
             url.searchParams.set('discussion', currentDiscussion);
             url.searchParams.set('language', currentLanguage);
-            setStatus(`Loading ${discussionLabel()} comments for ${languageLabel()}...`);
+            setStatus(renderStatus(statusLoadingTemplate));
 
             try {
                 const response = await fetch(url.toString(), {
@@ -162,13 +190,13 @@ const initializeStructure = () => {
                 }
 
                 renderComments(payload.comments ?? []);
-                setStatus(`Showing ${payload.discussionLabel ?? discussionLabel()} comments for ${payload.languageLabel ?? languageLabel()}.`);
+                setStatus(renderStatus(statusShowingTemplate));
             } catch (error) {
                 if (currentRequest !== requestSequence) {
                     return;
                 }
 
-                setStatus(error.message || 'Unable to load comments.');
+                setStatus(error.message || loadErrorText);
             }
         };
 
@@ -208,7 +236,7 @@ const initializeStructure = () => {
             const formData = new FormData(form);
             formData.set('discussion_type', currentDiscussion);
             formData.set('language', currentLanguage);
-            setStatus(`Posting in ${discussionLabel()} / ${languageLabel()}...`);
+            setStatus(renderStatus(statusPostingTemplate));
 
             try {
                 const response = await fetch(commentsUrl, {
@@ -235,9 +263,9 @@ const initializeStructure = () => {
                     return;
                 }
 
-                setStatus(`Showing ${payload.discussionLabel ?? discussionLabel()} comments for ${payload.languageLabel ?? languageLabel()}.`);
+                setStatus(renderStatus(statusShowingTemplate));
             } catch (error) {
-                setStatus(error.message || 'Unable to post comment.');
+                setStatus(error.message || postErrorText);
             }
         });
     }
@@ -256,16 +284,19 @@ const initializeStructure = () => {
     }
 
     const rarityFilter = cardResults.querySelector('[data-card-filter="rarity"]');
+    const collectionFilter = cardResults.querySelector('[data-card-filter="collection"]');
     const resetButton = cardResults.querySelector('[data-card-filter-reset]');
 
-    const syncCollectionState = (rarity) => {
+    const syncCollectionState = (rarity, collection) => {
         cardResults.dataset.rarity = rarity;
+        cardResults.dataset.collection = collection;
 
         if (!(collectionForm instanceof HTMLFormElement)) {
             return;
         }
 
         let rarityInput = collectionForm.querySelector('input[name="rarity"]');
+        let collectionInput = collectionForm.querySelector('input[name="collection"]');
 
         if (rarity !== '') {
             if (!(rarityInput instanceof HTMLInputElement)) {
@@ -276,32 +307,53 @@ const initializeStructure = () => {
             }
 
             rarityInput.value = rarity;
-            return;
+        } else {
+            rarityInput?.remove();
         }
 
-        rarityInput?.remove();
+        if (collection !== '') {
+            if (!(collectionInput instanceof HTMLInputElement)) {
+                collectionInput = document.createElement('input');
+                collectionInput.type = 'hidden';
+                collectionInput.name = 'collection';
+                collectionForm.append(collectionInput);
+            }
+
+            collectionInput.value = collection;
+        } else {
+            collectionInput?.remove();
+        }
     };
 
-    const replaceResults = (html, rarity) => {
+    const replaceResults = (html, rarity, collection) => {
         cardResults.innerHTML = html;
         cardResults.dataset.jsReady = 'false';
-        syncCollectionState(rarity);
+        syncCollectionState(rarity, collection);
 
         const url = new URL(window.location.href);
         if (rarity !== '') {
             url.searchParams.set('rarity', rarity);
-            url.searchParams.delete('page');
         } else {
             url.searchParams.delete('rarity');
+        }
+
+        if (collection !== '') {
+            url.searchParams.set('collection', collection);
+        } else {
+            url.searchParams.delete('collection');
+        }
+
+        if (rarity !== '' || collection !== '') {
+            url.searchParams.delete('page');
         }
 
         window.history.replaceState({}, '', url);
         initializeStructure();
     };
 
-    const fetchResults = async (rarity) => {
+    const fetchResults = async (rarity, collection) => {
         if (!filterUrl) {
-            syncCollectionState(rarity);
+            syncCollectionState(rarity, collection);
             collectionForm?.requestSubmit();
             return;
         }
@@ -313,6 +365,10 @@ const initializeStructure = () => {
 
         if (rarity !== '') {
             url.searchParams.set('rarity', rarity);
+        }
+
+        if (collection !== '') {
+            url.searchParams.set('collection', collection);
         }
 
         try {
@@ -327,15 +383,19 @@ const initializeStructure = () => {
                 throw new Error(payload.error ?? 'Unable to filter cards.');
             }
 
-            replaceResults(payload.html ?? '', rarity);
+            replaceResults(payload.html ?? '', rarity, collection);
         } catch (error) {
-            syncCollectionState(rarity);
+            syncCollectionState(rarity, collection);
             collectionForm?.requestSubmit();
         }
     };
 
     rarityFilter?.addEventListener('change', () => {
-        void fetchResults(rarityFilter.value);
+        void fetchResults(rarityFilter.value, collectionFilter instanceof HTMLSelectElement ? collectionFilter.value : '');
+    });
+
+    collectionFilter?.addEventListener('change', () => {
+        void fetchResults(rarityFilter instanceof HTMLSelectElement ? rarityFilter.value : '', collectionFilter.value);
     });
 
     resetButton?.addEventListener('click', () => {
@@ -343,7 +403,11 @@ const initializeStructure = () => {
             rarityFilter.value = '';
         }
 
-        void fetchResults('');
+        if (collectionFilter instanceof HTMLSelectElement) {
+            collectionFilter.value = '';
+        }
+
+        void fetchResults('', '');
     });
 };
 

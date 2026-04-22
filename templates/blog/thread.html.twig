@@ -1,0 +1,84 @@
+{% extends 'base.html.twig' %}
+
+{% import _self as forum %}
+
+{% macro comment_branch(comments, thread, commentAuthorName) %}
+    <div class="comment-list comment-list-nested">
+        {% for comment in comments %}
+            <article class="comment-item">
+                <p>{{ comment.content|nl2br }}</p>
+                <small>{{ comment.authorName }} - {{ comment.createdAt }}</small>
+
+                <details class="comment-reply-box">
+                    <summary>{{ 'blog.thread.reply_to_comment'|trans }}</summary>
+                    <form class="comment-form comment-form-inline" method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('blog_reply_' ~ thread.id) }}">
+                        <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                        <label>
+                            {{ 'comments.display_name'|trans }}
+                            <input type="text" value="{{ commentAuthorName }}" readonly>
+                        </label>
+                        <label>
+                            {{ 'comments.your_message'|trans }}
+                            <textarea name="content" rows="3" maxlength="2000" minlength="3" required placeholder="{{ 'blog.thread.reply_to_author'|trans({'%author%': comment.authorName}) }}"></textarea>
+                        </label>
+                        <button type="submit">{{ 'blog.thread.reply_submit'|trans }}</button>
+                    </form>
+                </details>
+
+                {% if comment.children is not empty %}
+                    {{ _self.comment_branch(comment.children, thread, commentAuthorName) }}
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+{% block title %}{{ thread.title }}{% endblock %}
+
+{% block body %}
+<a class="back-link" href="{{ path('blog_topic', { slug: topic.slug }) }}">{{ 'blog.thread.back_to_room'|trans }}</a>
+
+<section class="home-hero">
+    <p class="eyebrow">{{ topicView.title }}</p>
+    <h1>{{ thread.title }}</h1>
+    <p>{{ 'blog.thread.hero_description'|trans }}</p>
+</section>
+
+<section class="detail-panel forum-layout">
+    <div class="forum-section">
+        <h2>{{ 'blog.thread.original_post'|trans }}</h2>
+        <article class="forum-thread-card forum-thread-card-full">
+            <div class="forum-thread-meta">
+                <small>{{ thread.authorName }} - {{ thread.createdAt|date('Y-m-d H:i') }}</small>
+                <small>{{ 'blog.thread.last_activity'|trans }} {{ thread.lastActivityAt|date('Y-m-d H:i') }}</small>
+            </div>
+            <p>{{ thread.content|nl2br }}</p>
+        </article>
+    </div>
+
+    <div class="forum-section" id="replies">
+        <h2>{{ 'blog.thread.reply_heading'|trans }}</h2>
+
+        {% if comments is not empty %}
+            {{ forum.comment_branch(comments, thread, commentAuthorName) }}
+        {% else %}
+            <p class="muted">{{ 'blog.thread.replies_empty'|trans }}</p>
+        {% endif %}
+
+        <form class="comment-form" method="post">
+            <input type="hidden" name="_token" value="{{ csrf_token('blog_reply_' ~ thread.id) }}">
+            <input type="hidden" name="parent_id" value="">
+            <label>
+                {{ 'comments.display_name'|trans }}
+                <input type="text" value="{{ commentAuthorName }}" readonly>
+            </label>
+            <label>
+                {{ 'comments.your_message'|trans }}
+                <textarea name="content" rows="4" maxlength="2000" minlength="3" required placeholder="{{ 'blog.thread.reply_placeholder'|trans({'%title%': thread.title}) }}"></textarea>
+            </label>
+            <button type="submit">{{ 'blog.thread.reply_submit'|trans }}</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

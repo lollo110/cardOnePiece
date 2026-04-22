@@ -1,0 +1,4 @@
+auth:
+  error:
+    not_found: No account matches that email or username.
+    no_password: This account does not have a password sign-in available.

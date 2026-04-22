@@ -75,6 +75,12 @@ class Card
     #[ORM\Column(nullable: true)]
     private ?array $rawData = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $averageNearMintPriceCents = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $priceUpdatedAt = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
 
@@ -124,6 +130,10 @@ class Card
     public function setLinks(?array $links): self { $this->links = $links; return $this; }
     public function getRawData(): ?array { return $this->rawData; }
     public function setRawData(?array $rawData): self { $this->rawData = $rawData; return $this; }
+    public function getAverageNearMintPriceCents(): ?int { return $this->averageNearMintPriceCents; }
+    public function setAverageNearMintPriceCents(?int $averageNearMintPriceCents): self { $this->averageNearMintPriceCents = $averageNearMintPriceCents; return $this; }
+    public function getPriceUpdatedAt(): ?\DateTimeImmutable { return $this->priceUpdatedAt; }
+    public function setPriceUpdatedAt(?\DateTimeImmutable $priceUpdatedAt): self { $this->priceUpdatedAt = $priceUpdatedAt; return $this; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
     public function setUpdatedAt(\DateTimeImmutable $updatedAt): self { $this->updatedAt = $updatedAt; return $this; }
 }

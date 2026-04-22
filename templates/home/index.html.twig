@@ -1,21 +1,21 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Pirate Card Blog{% endblock %}
+{% block title %}{{ 'site.name'|trans }}{% endblock %}
 
 {% block body %}
 <section class="home-hero">
-    <p class="eyebrow">Pirate Card Blog</p>
-    <h1>Browse cards and join the conversation.</h1>
-    <p>Search from the header, explore the collection, then jump into the discussion rooms or comment on a card page.</p>
+    <p class="eyebrow">{{ 'site.name'|trans }}</p>
+    <h1>{{ 'home.hero.title'|trans }}</h1>
+    <p>{{ 'home.hero.description'|trans }}</p>
 </section>
 
 <section class="home-section">
     <div class="section-heading">
         <div>
-            <p class="eyebrow">Collection</p>
-            <h2>Recently updated cards</h2>
+            <p class="eyebrow">{{ 'nav.collection'|trans }}</p>
+            <h2>{{ 'home.recent.title'|trans }}</h2>
         </div>
-        <a href="{{ path('cards', { sort: 'recent' }) }}">View collection</a>
+        <a href="{{ path('cards', { sort: 'recent' }) }}">{{ 'home.recent.link'|trans }}</a>
     </div>
 
     <section class="card-grid" data-card-grid>
@@ -41,7 +41,7 @@
                         {% if card.version is defined and card.version %}<span>{{ card.version }}</span>{% endif %}
                     </div>
 
-                    <a class="card-detail-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">Details</a>
+                    <a class="card-detail-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">{{ 'card.view'|trans }}</a>
                 </div>
             </article>
         {% endfor %}
@@ -51,10 +51,10 @@
 <section class="home-section">
     <div class="section-heading">
         <div>
-            <p class="eyebrow">Discussion</p>
-            <h2>Blog rooms</h2>
+            <p class="eyebrow">{{ 'blog.section'|trans }}</p>
+            <h2>{{ 'home.rooms.title'|trans }}</h2>
         </div>
-        <a href="{{ path('blog') }}">Open blog</a>
+        <a href="{{ path('blog') }}">{{ 'home.rooms.link'|trans }}</a>
     </div>
 
     <div class="topic-grid">
@@ -62,7 +62,7 @@
             <article class="detail-panel topic-card">
                 <h3>{{ topic.title }}</h3>
                 <p>{{ topic.description }}</p>
-                <a class="card-detail-link" href="{{ path('blog_topic', { slug: topic.slug }) }}">Open discussion</a>
+                <a class="card-detail-link" href="{{ path('blog_topic', { slug: topic.slug }) }}">{{ topic.button }}</a>
             </article>
         {% endfor %}
     </div>

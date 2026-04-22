@@ -2,33 +2,43 @@
     <p class="message">{{ error }}</p>
 {% endif %}
 
-{% if (query or rarity) and results is empty and not error %}
-    <p class="message">Aucune carte trouvee.</p>
+{% if (query or rarity or collection) and results is empty and not error %}
+    <p class="message">{{ 'cards.empty'|trans }}</p>
 {% endif %}
 
-{% if rarityOptions is not empty %}
+{% if rarityOptions is not empty or collectionOptions is not empty %}
     <section class="collection-tools">
         <p>
-            {{ totalResults }} cartes
-            {% if rarity %}
-                - all {{ rarity }} cards
+            {{ 'cards.total'|trans({'%count%': totalResults}) }}
+            {% if rarity or collection %}
+                - {{ 'cards.filtered'|trans }}
             {% else %}
-                - page {{ paging.current }} / {{ paging.total }}
+                - {{ 'cards.page_count'|trans({'%current%': paging.current, '%total%': paging.total}) }}
             {% endif %}
         </p>
 
         <div class="filter-form">
             <label>
-                Rarity
+                {{ 'cards.filter.rarity'|trans }}
                 <select data-card-filter="rarity">
-                    <option value="">All rarities</option>
+                    <option value="">{{ 'cards.filter.all_rarities'|trans }}</option>
                     {% for rarityOption in rarityOptions %}
                         <option value="{{ rarityOption }}" {% if rarityOption == rarity %}selected{% endif %}>{{ rarityOption }}</option>
                     {% endfor %}
                 </select>
             </label>
 
-            <button type="button" data-card-filter-reset>Reset filters</button>
+            <label>
+                {{ 'cards.filter.collection'|trans }}
+                <select data-card-filter="collection">
+                    <option value="">{{ 'cards.filter.all_collections'|trans }}</option>
+                    {% for collectionOption in collectionOptions %}
+                        <option value="{{ collectionOption.value }}" {% if collectionOption.value == collection %}selected{% endif %}>{{ collectionOption.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <button type="button" data-card-filter-reset>{{ 'cards.filter.reset'|trans }}</button>
         </div>
     </section>
 {% endif %}
@@ -56,37 +66,41 @@
                         <span>{{ card.rarity }}</span>
                     {% endif %}
 
+                    {% if card.color is defined and card.color %}
+                        <span>{{ card.color }}</span>
+                    {% endif %}
+
                     {% if card.version is defined and card.version %}
                         <span>{{ card.version }}</span>
                     {% endif %}
                 </div>
 
-                <a class="card-detail-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">Details</a>
+                <a class="card-detail-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">{{ 'card.view'|trans }}</a>
             </div>
         </article>
     {% endfor %}
 </section>
 
-{% if paging.total > 1 and not rarity %}
-    <nav class="pagination" aria-label="Collection pages">
+{% if paging.total > 1 and not rarity and not collection %}
+    <nav class="pagination" aria-label="{{ 'cards.pagination.aria'|trans }}">
         {% set pageParams = { q: query, sort: sort } %}
 
         {% if paging.current > 1 %}
-            <a href="{{ path('cards', pageParams|merge({ page: 1 })) }}">First</a>
-            <a href="{{ path('cards', pageParams|merge({ page: paging.current - 1 })) }}">Previous</a>
+            <a href="{{ path('cards', pageParams|merge({ page: 1 })) }}">{{ 'cards.pagination.first'|trans }}</a>
+            <a href="{{ path('cards', pageParams|merge({ page: paging.current - 1 })) }}">{{ 'cards.pagination.previous'|trans }}</a>
         {% else %}
-            <span>First</span>
-            <span>Previous</span>
+            <span>{{ 'cards.pagination.first'|trans }}</span>
+            <span>{{ 'cards.pagination.previous'|trans }}</span>
         {% endif %}
 
-        <span>Page {{ paging.current }} of {{ paging.total }}</span>
+        <span>{{ 'cards.pagination.summary'|trans({'%current%': paging.current, '%total%': paging.total}) }}</span>
 
         {% if paging.current < paging.total %}
-            <a href="{{ path('cards', pageParams|merge({ page: paging.current + 1 })) }}">Next</a>
-            <a href="{{ path('cards', pageParams|merge({ page: paging.total })) }}">Last</a>
+            <a href="{{ path('cards', pageParams|merge({ page: paging.current + 1 })) }}">{{ 'cards.pagination.next'|trans }}</a>
+            <a href="{{ path('cards', pageParams|merge({ page: paging.total })) }}">{{ 'cards.pagination.last'|trans }}</a>
         {% else %}
-            <span>Next</span>
-            <span>Last</span>
+            <span>{{ 'cards.pagination.next'|trans }}</span>
+            <span>{{ 'cards.pagination.last'|trans }}</span>
         {% endif %}
     </nav>
 {% endif %}

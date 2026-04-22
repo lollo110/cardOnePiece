@@ -17,46 +17,46 @@ class RegistrationFormType extends AbstractType
     {
         $builder
             ->add('email', EmailType::class, [
-                'label' => 'Email',
+                'label' => 'form.email',
                 'required' => true,
                 'attr' => [
                     'autocomplete' => 'email',
                     'maxlength' => 180,
-                    'placeholder' => 'you@example.com',
+                    'placeholder' => 'form.email_placeholder',
                 ],
                 'constraints' => [
-                    new Assert\NotBlank(message: 'Enter your email address.'),
-                    new Assert\Email(message: 'Use a valid email address.'),
+                    new Assert\NotBlank(message: 'validators.email_required'),
+                    new Assert\Email(message: 'validators.email_invalid'),
                     new Assert\Length(max: 180),
                 ],
             ])
             ->add('username', TextType::class, [
-                'label' => 'Username',
+                'label' => 'form.username',
                 'required' => true,
                 'attr' => [
                     'autocomplete' => 'username',
                     'maxlength' => 60,
                     'minlength' => 3,
                     'pattern' => '^[A-Za-z0-9_-]+$',
-                    'placeholder' => 'your-name',
+                    'placeholder' => 'form.username_placeholder',
                 ],
             ])
             ->add('plainPassword', PasswordType::class, [
-                'label' => 'Password',
+                'label' => 'form.password',
                 'mapped' => false,
                 'required' => true,
                 'attr' => [
                     'autocomplete' => 'new-password',
                     'minlength' => 8,
                     'maxlength' => 255,
-                    'placeholder' => 'At least 8 characters',
+                    'placeholder' => 'form.password_placeholder',
                 ],
                 'constraints' => [
-                    new Assert\NotBlank(message: 'Choose a password.'),
+                    new Assert\NotBlank(message: 'validators.password_required'),
                     new Assert\Length(
                         min: 8,
                         max: 255,
-                        minMessage: 'Your password should be at least {{ limit }} characters.',
+                        minMessage: 'validators.password_min',
                     ),
                 ],
             ]);

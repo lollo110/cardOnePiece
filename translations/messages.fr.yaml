@@ -1,0 +1,284 @@
+site:
+  name: Pirate Card Blog
+  about:
+    title: À propos de Pirate Card Blog
+    intro: Pirate Card Blog est un site communautaire dédié à la découverte des cartes, au suivi des séries et aux discussions autour du One Piece Card Game.
+    section_1:
+      title: Ce que vous pouvez faire ici
+      paragraph_1: Parcourez la collection, recherchez une carte par nom ou par code, et ouvrez une page détaillée dédiée à chaque carte.
+      paragraph_2: Participez aux discussions communautaires autour de la collection, des échanges, du deckbuilding, des matchups et du jeu en général.
+    section_2:
+      title: Esprit de la communauté
+      paragraph_1: L’objectif est de garder un site accueillant, utile et simple à utiliser, aussi bien pour les collectionneurs que pour les joueurs.
+      paragraph_2: Les commentaires peuvent être modérés afin de limiter les contenus abusifs, haineux ou inappropriés et de préserver la qualité des échanges.
+    section_3:
+      title: Projet indépendant
+      paragraph_1: Pirate Card Blog est un projet de fans indépendant et n’est pas un site officiel de Bandai, Toei, Shueisha ou des éditeurs du One Piece Card Game.
+      paragraph_2: Les noms de cartes, visuels et marques restent la propriété de leurs détenteurs respectifs.
+  contact:
+    title: Contact et modération
+    intro: Les questions liées à la modération, aux commentaires publiés ou à l’accès au compte peuvent être traitées par l’équipe du site.
+    section_1:
+      title: Demandes liées aux commentaires et à la modération
+      paragraph_1: Si un commentaire doit être vérifié, masqué ou supprimé, indiquez la page de carte ou le salon concerné ainsi que suffisamment d’informations pour identifier rapidement la demande.
+      paragraph_2: Les messages liés à la modération doivent être clairs, factuels et inclure si possible la date ou le nom visible de l’auteur.
+    section_2:
+      title: Questions de compte
+      paragraph_1: Si vous ne pouvez pas vous connecter ou accéder à votre compte, vérifiez d’abord vos identifiants sur la page de connexion.
+      paragraph_2: Avant la mise en ligne, cette page devra contenir l’adresse e-mail publique ou le contact utilisé pour les demandes liées au compte et à la vie privée.
+  legal:
+    title: Mentions légales
+    intro: Cette page présente les informations légales relatives à la publication et au fonctionnement de Pirate Card Blog.
+    section_1:
+      title: Éditeur du site
+      paragraph_1: "Nom du site : Pirate Card Blog."
+      paragraph_2: "Responsable de publication : l’exploitant chargé de la publication et de la gestion du site."
+      paragraph_3: Avant la mise en ligne, cette section devra être complétée avec l’identité réelle de l’éditeur, son adresse postale et les coordonnées requises pour la publication.
+    section_2:
+      title: Hébergement
+      paragraph_1: L’hébergeur de production doit être identifié avec son nom, son adresse postale et ses coordonnées.
+      paragraph_2: Si l’hébergeur change, cette page devra être mise à jour afin que les informations restent exactes et accessibles.
+    section_3:
+      title: Propriété intellectuelle
+      paragraph_1: La structure du site, les textes éditoriaux originaux et les contributions communautaires originales sont protégés par les règles applicables en matière de propriété intellectuelle.
+      paragraph_2: Les noms, visuels et marques liés à One Piece restent la propriété de leurs détenteurs respectifs et sont mentionnés ici uniquement à des fins d’identification et de discussion.
+  privacy:
+    title: Politique de confidentialité
+    intro: Cette page explique comment les données personnelles peuvent être traitées lorsque des visiteurs naviguent sur le site, créent un compte et publient des commentaires.
+    section_1:
+      title: Données collectées
+      paragraph_1: Lorsqu’un compte est créé, le site enregistre les informations nécessaires à la gestion de l’accès, notamment l’adresse e-mail, le nom d’utilisateur et le mot de passe chiffré.
+      paragraph_2: Lorsqu’un commentaire est publié, le site enregistre le contenu publié, le nom affiché de l’auteur et les informations techniques nécessaires à la gestion de la discussion.
+    section_2:
+      title: Finalité du traitement
+      paragraph_1: Les données du compte sont utilisées pour l’authentification, la sécurité du compte et la gestion de la communauté.
+      paragraph_2: Les données des commentaires sont utilisées pour publier les discussions, appliquer les règles de modération et préserver la sécurité et la lisibilité du site.
+    section_3:
+      title: Vos droits
+      paragraph_1: Les utilisateurs peuvent demander l’accès, la correction ou la suppression de leurs données personnelles, sous réserve des limites légales ou techniques liées à la sécurité du compte et à l’historique de modération.
+      paragraph_2: Avant la mise en ligne, cette page devra indiquer le canal de contact utilisé pour traiter les demandes liées à la vie privée et à l’exercice des droits.
+  terms:
+    title: Conditions d’utilisation
+    intro: Ces conditions décrivent les principales règles d’utilisation de Pirate Card Blog et de participation à ses espaces communautaires.
+    section_1:
+      title: Utilisation autorisée
+      paragraph_1: Les utilisateurs ne doivent pas publier de contenu illégal, haineux, raciste, menaçant, diffamatoire ou volontairement nuisible.
+      paragraph_2: Le spam, l’usurpation d’identité et les tentatives de perturber le service ou de détourner les comptes ne sont pas autorisés.
+    section_2:
+      title: Contenu communautaire
+      paragraph_1: Les utilisateurs restent responsables du contenu qu’ils publient.
+      paragraph_2: Le site peut modérer, masquer ou supprimer les commentaires qui enfreignent les règles ou nuisent à la qualité de l’espace communautaire.
+    section_3:
+      title: Disponibilité du service
+      paragraph_1: Le site est fourni en l’état et peut être modifié, suspendu ou mis à jour à tout moment.
+      paragraph_2: L’accès peut être limité ou suspendu en cas d’abus, de maintenance ou de problème de sécurité.
+  cookies:
+    title: Cookies
+    intro: Cette page explique l’utilisation des cookies et technologies de stockage similaires sur Pirate Card Blog.
+    section_1:
+      title: Cookies essentiels
+      paragraph_1: Le site peut utiliser des cookies de session essentiels pour maintenir la connexion des utilisateurs, protéger les formulaires et sécuriser la navigation.
+      paragraph_2: Ces cookies sont nécessaires pour les fonctions principales comme l’accès au compte, la sécurité de session et les actions protégées.
+    section_2:
+      title: Outils supplémentaires
+      paragraph_1: Un stockage technique temporaire peut également être utilisé pour garder certaines parties de l’interface fluides pendant la navigation.
+      paragraph_2: Si des outils d’analyse, de publicité ou d’audience tiers sont ajoutés plus tard, cette page devra être mise à jour avant leur activation.
+
+nav:
+  home: Accueil
+  collection: Collection
+  blog: Blog
+
+locale:
+  switch: Changer de langue
+
+search:
+  placeholder: Rechercher des cartes par nom ou par code
+  button: Rechercher
+  view_all: Voir tous les résultats
+
+auth:
+  hello: "Bonjour, %username%"
+  sign_in: Se connecter
+  sign_up: S’inscrire
+  sign_out: Se déconnecter
+  create_account: Créer un compte
+  welcome_back: Bon retour
+  join: Rejoignez l’équipage
+  identifier: E-mail ou nom d’utilisateur
+  password: Mot de passe
+  login:
+    description: Connectez-vous avec votre e-mail ou votre nom d’utilisateur pour participer aux discussions avec votre compte.
+    switch: Nouveau ici ?
+  register:
+    title: Créez votre compte
+    description: Créez un compte pour publier avec votre nom d’utilisateur sur les pages de cartes et dans les salons de discussion.
+    switch: Déjà inscrit ?
+    success: Bienvenue à bord. Votre compte est prêt.
+
+form:
+  email: E-mail
+  username: Nom d’utilisateur
+  password: Mot de passe
+  email_placeholder: vous@exemple.com
+  username_placeholder: votre-nom
+  password_placeholder: Au moins 8 caractères
+
+common:
+  na: N/D
+  yes: Oui
+  no: Non
+
+home:
+  hero:
+    title: Explorez le One Piece Card Game et rejoignez la conversation.
+    description: Parcourez la collection, ouvrez n’importe quelle page de carte et partagez vos avis sur la collection, les échanges et le jeu.
+  recent:
+    title: Cartes récemment mises à jour
+    link: Voir la collection
+  rooms:
+    title: Salons de discussion
+    link: Voir les discussions
+
+blog:
+  section: Discussion
+  hero:
+    title: Choisissez un salon de discussion.
+    description: Rejoignez le salon trading pour parler collection ou le salon jeu pour échanger sur le deckbuilding, les matchups et les tournois.
+  back: Retour aux discussions
+  discussion:
+    heading: Discussion
+  room:
+    start_heading: Ouvrir un nouveau sujet
+    topics_heading: Sujets de ce salon
+    empty: Aucun sujet pour le moment. Lancez la premiere discussion.
+  topic:
+    placeholder: "Partagez votre avis sur %topic%"
+    default:
+      button: Entrer dans le salon
+    trading:
+      title: Trading et collection
+      description: Parlez des échanges, des objectifs de collection, des cartes favorites, des dernières acquisitions et des classeurs.
+      button: Entrer dans le salon trading
+    game:
+      title: Jeu
+      description: Parlez des decks, des matchups, des règles, des résultats de tournois et du format actuel.
+      button: Entrer dans le salon jeu
+  thread:
+    title_label: Titre du sujet
+    title_placeholder: Ecrivez un titre clair pour votre sujet
+    message_placeholder: "Lancez la discussion dans %topic%"
+    create: Creer le sujet
+    open: Ouvrir le sujet
+    last_activity: "Derniere activite :"
+    back_to_room: Retour au salon
+    hero_description: Lisez la discussion et repondez juste en dessous.
+    original_post: Message d'origine
+    reply_heading: Reponses
+    reply_placeholder: "Repondre a %title%"
+    reply_to_comment: Repondre a cette reponse
+    reply_to_author: "Repondre a %author%"
+    reply_submit: Publier la reponse
+    replies_empty: Aucune reponse pour le moment. Soyez le premier a repondre.
+    invalid_parent: La reponse cible est introuvable.
+    notice:
+      topic_live: Votre sujet est en ligne.
+      reply_live: Votre reponse est en ligne.
+
+comments:
+  display_name: Nom affiché
+  your_message: Votre message
+  your_comment: Votre commentaire
+  post: Publier le commentaire
+  empty: Aucun commentaire pour le moment. Lancez la discussion.
+  author:
+    guest_prefix: Invité
+  error:
+    csrf: Impossible de publier votre message pour le moment.
+    empty: Écrivez un message avant de publier.
+  notice:
+    live: Votre message est en ligne.
+    hidden: Votre commentaire est masqué pour vérification car il peut contenir un langage inapproprié.
+
+discussion:
+  heading: Discussion de la carte
+  intro: Choisissez un sujet et une langue pour lire ou écrire uniquement dans ce fil.
+  topic_label: Sujet
+  language: Langue
+  no_comments: Aucun commentaire pour ce sujet et cette langue.
+  status:
+    loading: "Chargement des commentaires %topic% pour %language%..."
+    showing: "Affichage des commentaires %topic% pour %language%."
+    posting: "Publication dans %topic% / %language%..."
+  error:
+    load: Impossible de charger les commentaires.
+    post: Impossible de publier le commentaire.
+  topic:
+    trading: Trading
+    game: Jeu
+
+cards:
+  page_title: Collection de cartes
+  heading: Collection de cartes
+  update_view: Mettre à jour l’affichage
+  empty: Aucune carte ne correspond à votre recherche.
+  total: "%count% cartes"
+  filtered: résultats filtrés
+  page_count: "page %current% / %total%"
+  back: Retour à la collection
+  sort:
+    label: Trier les cartes
+    relevance: Pertinence
+    recent: Récemment mises à jour
+    name_desc: Nom Z-A
+  filter:
+    rarity: Rareté
+    all_rarities: Toutes les raretés
+    collection: Collection
+    all_collections: Toutes les collections
+    reset: Réinitialiser les filtres
+  pagination:
+    aria: Pages de collection
+    first: Première
+    previous: Précédente
+    next: Suivante
+    last: Dernière
+    summary: "Page %current% sur %total%"
+
+card:
+  view: Voir la carte
+  comment:
+    placeholder: "Partagez une note sur %card%"
+  info:
+    heading: Informations de la carte
+  set:
+    heading: Série / extension
+  external_ids:
+    heading: Identifiants externes
+    cardtrader: ID CardTrader
+    tcgplayer: ID TCGplayer
+    cardmarket: ID Cardmarket
+  fields:
+    name: Nom
+    number: Numéro de carte
+    set: Série
+    set_code: Code de série
+    rarity: Rareté
+    version: Version
+    average_near_mint: Moyenne Near Mint
+    price_updated: Prix mis à jour
+    languages: Langues
+    source: Source
+  comments:
+    error:
+      not_found: Carte introuvable.
+      invalid_discussion: Sujet de discussion invalide.
+      invalid_language: Langue invalide.
+
+footer:
+  tagline: Une communauté indépendante autour des cartes One Piece pour parcourir les cartes, suivre les séries et partager des avis sur la collection et le jeu.
+  explore: Explorer
+  account: Compte
+  legal: Légal
+  contact: Contact
+  bottom: Projet de fans indépendant centré sur la discussion communautaire et la découverte des cartes.

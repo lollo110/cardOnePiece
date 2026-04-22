@@ -3,11 +3,13 @@
 namespace App\Controller;
 
 use App\Entity\BlogComment;
+use App\Entity\BlogThread;
 use App\Entity\BlogTopic;
 use App\Entity\Card;
 use App\Entity\CardComment;
 use App\Entity\User;
 use App\Repository\BlogCommentRepository;
+use App\Repository\BlogThreadRepository;
 use App\Repository\BlogTopicRepository;
 use App\Repository\CardCommentRepository;
 use App\Service\CardService;
@@ -20,30 +22,36 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class CardController extends AbstractController
 {
     private const BLOG_TOPICS = [
         [
-            'title' => 'Trading & collection',
             'slug' => 'trading',
-            'description' => 'Talk about trades, favorite cards, binder goals, new pickups and collection plans.',
-            'button' => 'Open trading room',
+            'title_key' => 'blog.topic.trading.title',
+            'description_key' => 'blog.topic.trading.description',
+            'button_key' => 'blog.topic.trading.button',
         ],
         [
-            'title' => 'Game',
             'slug' => 'game',
-            'description' => 'Talk about decks, matchups, rules, tournaments and the current format.',
-            'button' => 'Open game room',
+            'title_key' => 'blog.topic.game.title',
+            'description_key' => 'blog.topic.game.description',
+            'button_key' => 'blog.topic.game.button',
         ],
     ];
+
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+    ) {
+    }
 
     #[Route('/', name: 'app_home')]
     public function home(CardService $service, BlogTopicRepository $topicRepository, EntityManagerInterface $entityManager): Response
     {
         return $this->render('home/index.html.twig', [
             'recentCards' => $service->recentCards(8),
-            'topics' => $this->syncBlogTopics($topicRepository, $entityManager),
+            'topics' => $this->localizedTopics($this->syncBlogTopics($topicRepository, $entityManager)),
         ]);
     }
 
@@ -57,7 +65,7 @@ class CardController extends AbstractController
     public function blog(BlogTopicRepository $topicRepository, EntityManagerInterface $entityManager): Response
     {
         return $this->render('blog/index.html.twig', [
-            'topics' => $this->syncBlogTopics($topicRepository, $entityManager),
+            'topics' => $this->localizedTopics($this->syncBlogTopics($topicRepository, $entityManager)),
         ]);
     }
 
@@ -66,7 +74,7 @@ class CardController extends AbstractController
         string $slug,
         Request $request,
         BlogTopicRepository $topicRepository,
-        BlogCommentRepository $commentRepository,
+        BlogThreadRepository $threadRepository,
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator,
         CommentModerationService $commentModerationService,
@@ -83,15 +91,56 @@ class CardController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            $this->handleBlogCommentSubmission($request, $topic, $entityManager, $validator, $commentModerationService);
+            $this->handleBlogThreadSubmission($request, $topic, $entityManager, $validator, $commentModerationService);
 
-            return $this->redirect($this->generateUrl('blog_topic', ['slug' => $slug]) . '#discussion');
+            return $this->redirect($this->generateUrl('blog_topic', ['slug' => $slug]) . '#topics');
         }
 
         return $this->render('blog/topic.html.twig', [
             'topic' => $topic,
-            'topics' => $topics,
-            'comments' => $commentRepository->findForTopic($topic),
+            'topicView' => $this->localizedTopic($topic),
+            'topics' => $this->localizedTopics($topics),
+            'threads' => $threadRepository->findForRoom($topic),
+            'commentAuthorName' => $this->resolveCommentAuthorName($request),
+        ]);
+    }
+
+    #[Route('/blog/{slug}/topics/{threadId}', name: 'blog_thread', requirements: ['slug' => 'trading|game', 'threadId' => '\d+'], methods: ['GET', 'POST'])]
+    public function blogThread(
+        string $slug,
+        int $threadId,
+        Request $request,
+        BlogTopicRepository $topicRepository,
+        BlogThreadRepository $threadRepository,
+        BlogCommentRepository $commentRepository,
+        EntityManagerInterface $entityManager,
+        ValidatorInterface $validator,
+        CommentModerationService $commentModerationService,
+    ): Response {
+        $this->syncBlogTopics($topicRepository, $entityManager);
+        $topic = $topicRepository->findOneBy(['slug' => $slug]);
+
+        if (!$topic) {
+            throw $this->createNotFoundException('Blog topic not found.');
+        }
+
+        $thread = $threadRepository->findOnePublishedForRoom($threadId, $topic);
+
+        if (!$thread) {
+            throw $this->createNotFoundException('Discussion topic not found.');
+        }
+
+        if ($request->isMethod('POST')) {
+            $this->handleBlogReplySubmission($request, $topic, $thread, $commentRepository, $entityManager, $validator, $commentModerationService);
+
+            return $this->redirect($this->generateUrl('blog_thread', ['slug' => $slug, 'threadId' => $threadId]) . '#replies');
+        }
+
+        return $this->render('blog/thread.html.twig', [
+            'topic' => $topic,
+            'topicView' => $this->localizedTopic($topic),
+            'thread' => $thread,
+            'comments' => $this->buildBlogCommentTree($commentRepository->findForThread($thread)),
             'commentAuthorName' => $this->resolveCommentAuthorName($request),
         ]);
     }
@@ -103,16 +152,25 @@ class CardController extends AbstractController
         $page = max(1, $request->query->getInt('page', 1));
         $sort = (string) $request->query->get('sort', 'relevance');
         $rarity = trim((string) $request->query->get('rarity', ''));
-        $response = $service->searchCards($query !== '' ? $query : null, $page, $sort, $rarity !== '' ? $rarity : null);
+        $collection = trim((string) $request->query->get('collection', ''));
+        $response = $service->searchCards(
+            $query !== '' ? $query : null,
+            $page,
+            $sort,
+            $rarity !== '' ? $rarity : null,
+            $collection !== '' ? $collection : null,
+        );
         $paging = $response['paging'] ?? ['current' => 1, 'total' => 1, 'per_page' => 20];
         $results = $response['data'] ?? [];
         $rarityOptions = $service->rarityOptions($query !== '' ? $query : null);
+        $collectionOptions = $service->collectionOptions($query !== '' ? $query : null);
 
         return $this->render('card/index.html.twig', [
             'results' => $results,
             'query' => $query,
             'sort' => $sort,
             'rarity' => $rarity,
+            'collection' => $collection,
             'paging' => [
                 'current' => (int) ($paging['current'] ?? 1),
                 'total' => (int) ($paging['total'] ?? 1),
@@ -121,6 +179,7 @@ class CardController extends AbstractController
             'totalResults' => (int) ($response['results'] ?? 0),
             'error' => $response['error'] ?? null,
             'rarityOptions' => $rarityOptions,
+            'collectionOptions' => $collectionOptions,
         ]);
     }
 
@@ -130,8 +189,15 @@ class CardController extends AbstractController
         $query = trim((string) $request->query->get('q', ''));
         $sort = (string) $request->query->get('sort', 'relevance');
         $rarity = trim((string) $request->query->get('rarity', ''));
+        $collection = trim((string) $request->query->get('collection', ''));
         $page = max(1, $request->query->getInt('page', 1));
-        $response = $service->searchCards($query !== '' ? $query : null, $page, $sort, $rarity !== '' ? $rarity : null);
+        $response = $service->searchCards(
+            $query !== '' ? $query : null,
+            $page,
+            $sort,
+            $rarity !== '' ? $rarity : null,
+            $collection !== '' ? $collection : null,
+        );
         $paging = $response['paging'] ?? ['current' => 1, 'total' => 1, 'per_page' => 20];
 
         return $this->json([
@@ -140,6 +206,7 @@ class CardController extends AbstractController
                 'query' => $query,
                 'sort' => $sort,
                 'rarity' => $rarity,
+                'collection' => $collection,
                 'paging' => [
                     'current' => (int) ($paging['current'] ?? 1),
                     'total' => (int) ($paging['total'] ?? 1),
@@ -148,6 +215,7 @@ class CardController extends AbstractController
                 'totalResults' => (int) ($response['results'] ?? 0),
                 'error' => $response['error'] ?? null,
                 'rarityOptions' => $service->rarityOptions($query !== '' ? $query : null),
+                'collectionOptions' => $service->collectionOptions($query !== '' ? $query : null),
             ]),
         ]);
     }
@@ -211,7 +279,7 @@ class CardController extends AbstractController
         $cardEntity = $entityManager->getRepository(Card::class)->findOneBy(['apiId' => $id]);
 
         if (!$cardEntity) {
-            return $this->json(['error' => 'Card not found.'], Response::HTTP_NOT_FOUND);
+            return $this->json(['error' => $this->translator->trans('card.comments.error.not_found')], Response::HTTP_NOT_FOUND);
         }
 
         $languageMap = $this->cardCommentLanguageMapFromEntity($cardEntity);
@@ -222,21 +290,21 @@ class CardController extends AbstractController
             $language = (string) $request->request->get('language', array_key_first($languageMap) ?: 'english');
 
             if (!isset($discussionTypes[$discussionType])) {
-                return $this->json(['error' => 'Invalid discussion type.'], Response::HTTP_BAD_REQUEST);
+                return $this->json(['error' => $this->translator->trans('card.comments.error.invalid_discussion')], Response::HTTP_BAD_REQUEST);
             }
 
             if (!isset($languageMap[$language])) {
-                return $this->json(['error' => 'Invalid language.'], Response::HTTP_BAD_REQUEST);
+                return $this->json(['error' => $this->translator->trans('card.comments.error.invalid_language')], Response::HTTP_BAD_REQUEST);
             }
 
             if (!$this->isCsrfTokenValid('card_comment_' . $id, (string) $request->request->get('_token'))) {
-                return $this->json(['error' => 'Unable to post your message right now.'], Response::HTTP_FORBIDDEN);
+                return $this->json(['error' => $this->translator->trans('comments.error.csrf')], Response::HTTP_FORBIDDEN);
             }
 
             $content = trim((string) $request->request->get('content', ''));
 
             if ($content === '') {
-                return $this->json(['error' => 'Write a message before posting.'], Response::HTTP_BAD_REQUEST);
+                return $this->json(['error' => $this->translator->trans('comments.error.empty')], Response::HTTP_BAD_REQUEST);
             }
 
             $comment = (new CardComment())
@@ -275,7 +343,7 @@ class CardController extends AbstractController
             ];
 
             if (!$moderationResult->isApproved()) {
-                $payload['notice'] = 'Your comment is hidden for review because it may contain inappropriate language.';
+                $payload['notice'] = $this->translator->trans('comments.notice.hidden');
             }
 
             return $this->json($payload, $moderationResult->isApproved() ? Response::HTTP_OK : Response::HTTP_ACCEPTED);
@@ -316,9 +384,9 @@ class CardController extends AbstractController
                 ?? ($definition['slug'] === 'trading' ? ($stored['trading-prices'] ?? null) : null)
                 ?? new BlogTopic();
             $topic
-                ->setTitle($definition['title'])
+                ->setTitle($this->translator->trans($definition['title_key'], [], null, 'en'))
                 ->setSlug($definition['slug'])
-                ->setDescription($definition['description']);
+                ->setDescription($this->translator->trans($definition['description_key'], [], null, 'en'));
             $entityManager->persist($topic);
             $stored[$definition['slug']] = $topic;
         }
@@ -331,7 +399,7 @@ class CardController extends AbstractController
         ));
     }
 
-    private function handleBlogCommentSubmission(
+    private function handleBlogThreadSubmission(
         Request $request,
         BlogTopic $topic,
         EntityManagerInterface $entityManager,
@@ -339,22 +407,80 @@ class CardController extends AbstractController
         CommentModerationService $commentModerationService,
     ): void
     {
-        if (!$this->isCsrfTokenValid('blog_comment_' . $topic->getId(), (string) $request->request->get('_token'))) {
-            $this->addFlash('error', 'Unable to post your message right now.');
+        if (!$this->isCsrfTokenValid('blog_thread_' . $topic->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', $this->translator->trans('comments.error.csrf'));
+
+            return;
+        }
+
+        $title = trim((string) $request->request->get('title', ''));
+        $content = trim((string) $request->request->get('content', ''));
+
+        $thread = (new BlogThread())
+            ->setTopic($topic)
+            ->setAuthorUser($this->currentUser())
+            ->setAuthorName($this->resolveCommentAuthorName($request))
+            ->setTitle($title)
+            ->setContent($content);
+
+        $validationError = $this->firstValidationError($validator->validate($thread));
+
+        if ($validationError !== null) {
+            $this->addFlash('error', $validationError);
+
+            return;
+        }
+
+        $moderationResult = $commentModerationService->moderate($thread->getTitle() . "\n" . $thread->getContent());
+
+        if (!$moderationResult->isApproved()) {
+            $thread
+                ->setModerationStatus(BlogThread::STATUS_BLOCKED)
+                ->setModerationReason($moderationResult->getReason());
+        }
+
+        $entityManager->persist($thread);
+        $entityManager->flush();
+
+        if ($moderationResult->isApproved()) {
+            $this->addFlash('success', $this->translator->trans('blog.thread.notice.topic_live'));
+
+            return;
+        }
+
+        $this->addFlash('warning', $this->translator->trans('comments.notice.hidden'));
+    }
+
+    private function handleBlogReplySubmission(
+        Request $request,
+        BlogTopic $topic,
+        BlogThread $thread,
+        BlogCommentRepository $commentRepository,
+        EntityManagerInterface $entityManager,
+        ValidatorInterface $validator,
+        CommentModerationService $commentModerationService,
+    ): void
+    {
+        if (!$this->isCsrfTokenValid('blog_reply_' . $thread->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', $this->translator->trans('comments.error.csrf'));
 
             return;
         }
 
         $content = trim((string) $request->request->get('content', ''));
+        $parentId = $request->request->getInt('parent_id', 0);
+        $parentComment = $parentId > 0 ? $commentRepository->findOnePublishedForThread($parentId, $thread) : null;
 
-        if ($content === '') {
-            $this->addFlash('error', 'Write a message before posting.');
+        if ($parentId > 0 && $parentComment === null) {
+            $this->addFlash('error', $this->translator->trans('blog.thread.invalid_parent'));
 
             return;
         }
 
         $comment = (new BlogComment())
             ->setTopic($topic)
+            ->setThread($thread)
+            ->setParentComment($parentComment)
             ->setAuthorUser($this->currentUser())
             ->setAuthorName($this->resolveCommentAuthorName($request))
             ->setContent($content);
@@ -373,18 +499,20 @@ class CardController extends AbstractController
             $comment
                 ->setModerationStatus(BlogComment::STATUS_BLOCKED)
                 ->setModerationReason($moderationResult->getReason());
+        } else {
+            $thread->setLastActivityAt($comment->getCreatedAt());
         }
 
         $entityManager->persist($comment);
         $entityManager->flush();
 
         if ($moderationResult->isApproved()) {
-            $this->addFlash('success', 'Your message is live.');
+            $this->addFlash('success', $this->translator->trans('blog.thread.notice.reply_live'));
 
             return;
         }
 
-        $this->addFlash('warning', 'Your message is hidden for review because it may contain inappropriate language.');
+        $this->addFlash('warning', $this->translator->trans('comments.notice.hidden'));
     }
 
     private function resolveCommentAuthorName(Request $request): string
@@ -395,8 +523,8 @@ class CardController extends AbstractController
     private function cardDiscussionTypes(): array
     {
         return [
-            CardComment::DISCUSSION_TRADING => 'Trading',
-            CardComment::DISCUSSION_GAME => 'Game',
+            CardComment::DISCUSSION_TRADING => $this->translator->trans('discussion.topic.trading'),
+            CardComment::DISCUSSION_GAME => $this->translator->trans('discussion.topic.game'),
         ];
     }
 
@@ -511,7 +639,7 @@ class CardController extends AbstractController
             return $alias;
         }
 
-        $alias = 'Guest ' . random_int(1000, 999999);
+        $alias = $this->translator->trans('comments.author.guest_prefix') . ' ' . random_int(1000, 999999);
         $session->set('guest_comment_alias', $alias);
 
         return $alias;
@@ -524,6 +652,87 @@ class CardController extends AbstractController
     {
         foreach ($violations as $violation) {
             return $violation->getMessage();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<BlogComment> $comments
+     * @return list<array{id: int, authorName: string, content: string, createdAt: string, children: list<array{id: int, authorName: string, content: string, createdAt: string, children: list<mixed>}>}>
+     */
+    private function buildBlogCommentTree(array $comments): array
+    {
+        $byParent = [];
+
+        foreach ($comments as $comment) {
+            $parentId = $comment->getParentComment()?->getId() ?? 0;
+            $byParent[$parentId][] = $comment;
+        }
+
+        return $this->commentBranch($byParent, 0);
+    }
+
+    /**
+     * @param array<int, list<BlogComment>> $byParent
+     * @return list<array{id: int, authorName: string, content: string, createdAt: string, children: list<mixed>}>
+     */
+    private function commentBranch(array $byParent, int $parentId): array
+    {
+        $branch = [];
+
+        foreach ($byParent[$parentId] ?? [] as $comment) {
+            $branch[] = [
+                'id' => (int) $comment->getId(),
+                'authorName' => $comment->getAuthorName(),
+                'content' => $comment->getContent(),
+                'createdAt' => $comment->getCreatedAt()->format('Y-m-d H:i'),
+                'children' => $this->commentBranch($byParent, (int) $comment->getId()),
+            ];
+        }
+
+        return $branch;
+    }
+
+    /**
+     * @param array<int, BlogTopic> $topics
+     * @return list<array{slug: string, title: string, description: string, button: string}>
+     */
+    private function localizedTopics(array $topics): array
+    {
+        return array_map(fn (BlogTopic $topic): array => $this->localizedTopic($topic), $topics);
+    }
+
+    /**
+     * @return array{slug: string, title: string, description: string, button: string}
+     */
+    private function localizedTopic(BlogTopic $topic): array
+    {
+        $definition = $this->topicDefinition($topic->getSlug());
+
+        if ($definition === null) {
+            return [
+                'slug' => $topic->getSlug(),
+                'title' => $topic->getTitle(),
+                'description' => $topic->getDescription(),
+                'button' => $this->translator->trans('blog.topic.default.button'),
+            ];
+        }
+
+        return [
+            'slug' => $topic->getSlug(),
+            'title' => $this->translator->trans($definition['title_key']),
+            'description' => $this->translator->trans($definition['description_key']),
+            'button' => $this->translator->trans($definition['button_key']),
+        ];
+    }
+
+    private function topicDefinition(string $slug): ?array
+    {
+        foreach (self::BLOG_TOPICS as $definition) {
+            if ($definition['slug'] === $slug) {
+                return $definition;
+            }
         }
 
         return null;

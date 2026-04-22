@@ -1,0 +1,25 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block body %}
+    <section class="info-page">
+        <div class="info-page-header">
+            <p class="eyebrow">{{ 'site.name'|trans }}</p>
+            <h1>{{ pageTitle }}</h1>
+            <p class="info-page-intro">{{ pageIntro }}</p>
+        </div>
+
+        <div class="info-page-grid">
+            {% for section in sections %}
+                <article class="detail-panel info-section">
+                    <h2>{{ section.title }}</h2>
+
+                    {% for paragraph in section.content %}
+                        <p>{{ paragraph }}</p>
+                    {% endfor %}
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,11 @@
+validators:
+  email_required: Saisissez votre adresse e-mail.
+  email_invalid: Utilisez une adresse e-mail valide.
+  email_taken: Un compte utilise deja cette adresse e-mail.
+  username_required: Choisissez un nom d'utilisateur.
+  username_taken: Ce nom d'utilisateur est deja pris.
+  username_format: Utilisez uniquement des lettres, des chiffres, des tirets et des tirets bas pour votre nom d'utilisateur.
+  password_required: Choisissez un mot de passe.
+  password_min: Votre mot de passe doit contenir au moins {{ limit }} caracteres.
+  comment_required: Ecrivez un message avant de publier.
+  topic_title_required: Ecrivez un titre avant de publier.

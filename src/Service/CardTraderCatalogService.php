@@ -23,7 +23,7 @@ class CardTraderCatalogService
     {
         if ($this->expansions === null) {
             $expansions = array_values(array_filter(
-                $this->request('/expansions'),
+                $this->requestList('/expansions'),
                 static fn (array $expansion): bool => (int) ($expansion['game_id'] ?? 0) === self::ONE_PIECE_GAME_ID
             ));
 
@@ -47,9 +47,65 @@ class CardTraderCatalogService
         }
 
         return array_values(array_filter(
-            $this->request('/blueprints/export', ['expansion_id' => $expansionId], true),
+            $this->requestList('/blueprints/export', ['expansion_id' => $expansionId], true),
             static fn (array $blueprint): bool => in_array((int) ($blueprint['category_id'] ?? 0), self::CARD_CATEGORIES, true)
         ));
+    }
+
+    public function nearMintAveragePricesForExpansion(array $expansion): array
+    {
+        $expansionId = (int) ($expansion['id'] ?? 0);
+
+        if ($expansionId <= 0) {
+            return [];
+        }
+
+        $data = $this->requestData('/marketplace/products', ['expansion_id' => $expansionId], true);
+        $averagesByBlueprint = [];
+
+        foreach ($data as $blueprintId => $products) {
+            if (!is_array($products)) {
+                continue;
+            }
+
+            $normalizedBlueprintId = is_numeric($blueprintId) ? (int) $blueprintId : 0;
+
+            if ($normalizedBlueprintId <= 0) {
+                continue;
+            }
+
+            $prices = [];
+
+            foreach ($products as $product) {
+                if (!is_array($product)) {
+                    continue;
+                }
+
+                $condition = strtolower(trim((string) ($product['properties_hash']['condition'] ?? $product['properties']['condition'] ?? '')));
+
+                if ($condition !== 'near mint') {
+                    continue;
+                }
+
+                $priceCents = $product['price_cents'] ?? $product['price']['cents'] ?? null;
+
+                if (!is_numeric($priceCents)) {
+                    continue;
+                }
+
+                $prices[] = (int) $priceCents;
+            }
+
+            if ($prices === []) {
+                continue;
+            }
+
+            $averagesByBlueprint[$normalizedBlueprintId] = (int) round(array_sum($prices) / count($prices));
+        }
+
+        unset($data);
+
+        return $averagesByBlueprint;
     }
 
     public function expansionLabel(array $expansion): string
@@ -64,7 +120,14 @@ class CardTraderCatalogService
         return $name !== '' ? $name : 'Unknown expansion';
     }
 
-    private function request(string $path, array $query = [], bool $allowNotFound = false): array
+    private function requestList(string $path, array $query = [], bool $allowNotFound = false): array
+    {
+        $data = $this->requestData($path, $query, $allowNotFound);
+
+        return array_values(array_filter($data, static fn ($row): bool => is_array($row)));
+    }
+
+    private function requestData(string $path, array $query = [], bool $allowNotFound = false): array
     {
         if (trim($this->cardTraderApiToken) === '') {
             throw new \RuntimeException('CardTrader API token is missing. Set CARDTRADER_API_TOKEN before importing cards.');
@@ -101,6 +164,6 @@ class CardTraderCatalogService
             throw new \RuntimeException('CardTrader returned an unexpected response.');
         }
 
-        return array_values(array_filter($data, static fn ($row): bool => is_array($row)));
+        return $data;
     }
 }

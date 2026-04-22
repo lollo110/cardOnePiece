@@ -13,6 +13,7 @@ class CardImporter
 
     private int $created = 0;
     private int $updated = 0;
+    private int $pricesUpdated = 0;
 
     public function __construct(
         private readonly CardTraderCatalogService $catalogService,
@@ -29,8 +30,22 @@ class CardImporter
         $count = 0;
 
         foreach ($expansions as $index => $expansion) {
+            $nearMintAveragePrices = null;
+
+            try {
+                $nearMintAveragePrices = $this->catalogService->nearMintAveragePricesForExpansion($expansion);
+            } catch (\RuntimeException) {
+                $nearMintAveragePrices = null;
+            }
+
             foreach ($this->catalogService->cardsForExpansion($expansion) as $payload) {
-                $this->upsertCard($payload, $expansion);
+                $this->upsertCard(
+                    $payload,
+                    $expansion,
+                    is_array($nearMintAveragePrices)
+                        ? ($nearMintAveragePrices[(int) ($payload['id'] ?? 0)] ?? null)
+                        : null,
+                );
                 $count++;
 
                 if ($count % $flushEvery === 0) {
@@ -39,6 +54,9 @@ class CardImporter
             }
 
             $onPageImported?->__invoke($index + 1, $totalPages, $this->catalogService->expansionLabel($expansion));
+
+            unset($nearMintAveragePrices);
+            gc_collect_cycles();
         }
 
         $this->entityManager->flush();
@@ -47,6 +65,7 @@ class CardImporter
             'seen' => $count,
             'created' => $this->created,
             'updated' => $this->updated,
+            'prices_updated' => $this->pricesUpdated,
         ];
     }
 
@@ -56,9 +75,10 @@ class CardImporter
         $this->episodeCache = [];
         $this->created = 0;
         $this->updated = 0;
+        $this->pricesUpdated = 0;
     }
 
-    private function upsertCard(array $payload, array $expansionPayload): void
+    private function upsertCard(array $payload, array $expansionPayload, ?int $averageNearMintPriceCents = null): void
     {
         $apiId = (int) ($payload['id'] ?? 0);
 
@@ -71,6 +91,8 @@ class CardImporter
         $collectorNumber = trim((string) ($payload['fixed_properties']['collector_number'] ?? ''));
         $cardmarketId = $this->primaryCardmarketId($payload);
         $languages = $this->extractLanguages($payload);
+        $color = $this->extractColor($payload);
+        $priceUpdatedAt = new \DateTimeImmutable();
 
         $card
             ->setApiId($apiId)
@@ -83,7 +105,7 @@ class CardImporter
             ->setCardNumber($collectorNumber !== '' ? $collectorNumber : null)
             ->setHp(null)
             ->setRarity($this->normalizeRarity($payload['fixed_properties']['onepiece_rarity'] ?? null))
-            ->setColor(null)
+            ->setColor($color)
             ->setVersion($this->boundedNullableString($payload['version'] ?? null, 255))
             ->setSupertype(null)
             ->setTcgid(null)
@@ -98,7 +120,18 @@ class CardImporter
                 'blueprint' => $payload,
                 'expansion' => $expansionPayload,
             ])
-            ->setUpdatedAt(new \DateTimeImmutable());
+            ->setUpdatedAt($priceUpdatedAt);
+
+        if ($averageNearMintPriceCents !== null) {
+            $card
+                ->setAverageNearMintPriceCents($averageNearMintPriceCents)
+                ->setPriceUpdatedAt($priceUpdatedAt);
+            $this->pricesUpdated++;
+        } elseif ($card->getAverageNearMintPriceCents() !== null || $card->getPriceUpdatedAt() !== null) {
+            $card
+                ->setAverageNearMintPriceCents(null)
+                ->setPriceUpdatedAt($priceUpdatedAt);
+        }
 
         $this->entityManager->persist($card);
     }
@@ -202,6 +235,37 @@ class CardImporter
         return [];
     }
 
+    private function extractColor(array $payload): ?string
+    {
+        $fixedProperties = $payload['fixed_properties'] ?? [];
+
+        foreach (['onepiece_color', 'color', 'colors'] as $key) {
+            $color = $this->normalizeColorValue($fixedProperties[$key] ?? null);
+
+            if ($color !== null) {
+                return $color;
+            }
+        }
+
+        foreach ($payload['editable_properties'] ?? [] as $property) {
+            $name = strtolower(trim((string) ($property['name'] ?? '')));
+
+            if ($name === '' || !str_contains($name, 'color')) {
+                continue;
+            }
+
+            foreach (['value', 'current_value', 'default_value'] as $field) {
+                $color = $this->normalizeColorValue($property[$field] ?? null);
+
+                if ($color !== null) {
+                    return $color;
+                }
+            }
+        }
+
+        return $this->normalizeColorValue($payload['color'] ?? null);
+    }
+
     private function primaryCardmarketId(array $payload): ?int
     {
         $ids = array_values(array_filter(
@@ -235,6 +299,55 @@ class CardImporter
             'alternate art' => 'Alternate Art',
             'don!!' => 'DON!!',
             default => $this->nullableString($rarity),
+        };
+    }
+
+    private function normalizeColorValue(mixed $value): ?string
+    {
+        if (is_array($value)) {
+            $colors = array_values(array_filter(array_map(
+                fn (mixed $entry): ?string => $this->normalizeSingleColor($entry),
+                $value
+            )));
+
+            if ($colors === []) {
+                return null;
+            }
+
+            return implode(' / ', array_values(array_unique($colors)));
+        }
+
+        $rawValue = trim((string) $value);
+
+        if ($rawValue === '') {
+            return null;
+        }
+
+        $parts = preg_split('/[\/,]/', $rawValue) ?: [];
+        $colors = array_values(array_filter(array_map(
+            fn (string $part): ?string => $this->normalizeSingleColor($part),
+            $parts
+        )));
+
+        if ($colors !== []) {
+            return implode(' / ', array_values(array_unique($colors)));
+        }
+
+        return $this->normalizeSingleColor($rawValue);
+    }
+
+    private function normalizeSingleColor(mixed $value): ?string
+    {
+        $value = strtolower(trim((string) $value));
+
+        return match ($value) {
+            'red' => 'Red',
+            'green' => 'Green',
+            'blue' => 'Blue',
+            'purple' => 'Purple',
+            'black' => 'Black',
+            'yellow' => 'Yellow',
+            default => $value !== '' ? ucfirst($value) : null,
         };
     }
 

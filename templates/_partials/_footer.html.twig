@@ -1,3 +1,45 @@
 <footer class="site-footer">
-    <p>Pirate Card Blog</p>
+    <div class="site-footer-grid">
+        <section class="footer-block footer-brand">
+            <a class="site-logo" href="{{ path('app_home') }}">{{ 'site.name'|trans }}</a>
+            <p>
+                {{ 'footer.tagline'|trans }}
+            </p>
+        </section>
+
+        <nav class="footer-block" aria-label="{{ 'footer.explore'|trans }}">
+            <h2>{{ 'footer.explore'|trans }}</h2>
+            <a href="{{ path('app_home') }}">{{ 'nav.home'|trans }}</a>
+            <a href="{{ path('cards') }}">{{ 'nav.collection'|trans }}</a>
+            <a href="{{ path('blog') }}">{{ 'nav.blog'|trans }}</a>
+            <a href="{{ path('blog_topic', { slug: 'trading' }) }}">{{ 'blog.topic.trading.button'|trans }}</a>
+            <a href="{{ path('blog_topic', { slug: 'game' }) }}">{{ 'blog.topic.game.button'|trans }}</a>
+        </nav>
+
+        <nav class="footer-block" aria-label="{{ 'footer.account'|trans }}">
+            <h2>{{ 'footer.account'|trans }}</h2>
+            {% if app.user %}
+                <span class="footer-user">{{ app.user.username }}</span>
+                <a href="{{ path('app_logout') }}">{{ 'auth.sign_out'|trans }}</a>
+            {% else %}
+                <a href="{{ path('app_login') }}">{{ 'auth.sign_in'|trans }}</a>
+                <a href="{{ path('app_register') }}">{{ 'auth.sign_up'|trans }}</a>
+            {% endif %}
+            <a href="{{ path('site_contact') }}">{{ 'footer.contact'|trans }}</a>
+        </nav>
+
+        <nav class="footer-block" aria-label="{{ 'footer.legal'|trans }}">
+            <h2>{{ 'footer.legal'|trans }}</h2>
+            <a href="{{ path('site_about') }}">{{ 'site.about.title'|trans }}</a>
+            <a href="{{ path('site_legal_notice') }}">{{ 'site.legal.title'|trans }}</a>
+            <a href="{{ path('site_privacy_policy') }}">{{ 'site.privacy.title'|trans }}</a>
+            <a href="{{ path('site_terms_of_use') }}">{{ 'site.terms.title'|trans }}</a>
+            <a href="{{ path('site_cookies') }}">{{ 'site.cookies.title'|trans }}</a>
+        </nav>
+    </div>
+
+    <div class="site-footer-bottom">
+        <p>&copy; {{ 'now'|date('Y') }} {{ 'site.name'|trans }}</p>
+        <p>{{ 'footer.bottom'|trans }}</p>
+    </div>
 </footer>

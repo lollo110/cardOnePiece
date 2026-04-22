@@ -22,6 +22,14 @@ class BlogComment
     private BlogTopic $topic;
 
     #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private BlogThread $thread;
+
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
+    private ?self $parentComment = null;
+
+    #[ORM\ManyToOne]
     #[ORM\JoinColumn(onDelete: 'SET NULL')]
     private ?User $authorUser = null;
 
@@ -30,7 +38,7 @@ class BlogComment
     private string $authorName = 'Anonymous';
 
     #[ORM\Column(type: 'text')]
-    #[Assert\NotBlank(message: 'Write a message before posting.')]
+    #[Assert\NotBlank(message: 'validators.comment_required')]
     #[Assert\Length(min: 3, max: 2000)]
     private string $content = '';
 
@@ -51,6 +59,10 @@ class BlogComment
     public function getId(): ?int { return $this->id; }
     public function getTopic(): BlogTopic { return $this->topic; }
     public function setTopic(BlogTopic $topic): self { $this->topic = $topic; return $this; }
+    public function getThread(): BlogThread { return $this->thread; }
+    public function setThread(BlogThread $thread): self { $this->thread = $thread; return $this; }
+    public function getParentComment(): ?self { return $this->parentComment; }
+    public function setParentComment(?self $parentComment): self { $this->parentComment = $parentComment; return $this; }
     public function getAuthorUser(): ?User { return $this->authorUser; }
     public function setAuthorUser(?User $authorUser): self { $this->authorUser = $authorUser; return $this; }
     public function getAuthorName(): string { return $this->authorName; }

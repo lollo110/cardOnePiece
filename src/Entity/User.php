@@ -11,8 +11,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'app_user')]
-#[UniqueEntity(fields: ['username'], message: 'This username is already taken.')]
-#[UniqueEntity(fields: ['email'], message: 'An account already uses this email address.', ignoreNull: true)]
+#[UniqueEntity(fields: ['username'], message: 'validators.username_taken')]
+#[UniqueEntity(fields: ['email'], message: 'validators.email_taken', ignoreNull: true)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -21,16 +21,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true, nullable: true)]
-    #[Assert\Email(message: 'Use a valid email address.')]
+    #[Assert\Email(message: 'validators.email_invalid')]
     #[Assert\Length(max: 180)]
     private ?string $email = null;
 
     #[ORM\Column(length: 60, unique: true)]
-    #[Assert\NotBlank(message: 'Choose a username.')]
+    #[Assert\NotBlank(message: 'validators.username_required')]
     #[Assert\Length(min: 3, max: 60)]
     #[Assert\Regex(
         pattern: '/^[A-Za-z0-9_-]+$/',
-        message: 'Use only letters, numbers, hyphens and underscores for your username.',
+        message: 'validators.username_format',
     )]
     private string $username = '';
 

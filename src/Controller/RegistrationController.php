@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\UserAuthenticatorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class RegistrationController extends AbstractController
 {
@@ -22,6 +23,7 @@ class RegistrationController extends AbstractController
         UserAuthenticatorInterface $userAuthenticator,
         LoginFormAuthenticator $loginFormAuthenticator,
         EntityManagerInterface $entityManager,
+        TranslatorInterface $translator,
     ): Response {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_home');
@@ -35,7 +37,7 @@ class RegistrationController extends AbstractController
             $user->setPassword($passwordHasher->hashPassword($user, (string) $form->get('plainPassword')->getData()));
             $entityManager->persist($user);
             $entityManager->flush();
-            $this->addFlash('success', 'Welcome aboard. Your account is ready.');
+            $this->addFlash('success', $translator->trans('auth.register.success'));
 
             return $userAuthenticator->authenticateUser($user, $loginFormAuthenticator, $request);
         }
