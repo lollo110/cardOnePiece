@@ -90,7 +90,8 @@ blog:
     original_post: Original post
     reply_heading: Replies
     reply_placeholder: "Reply to %title%"
-    reply_to_comment: Reply to this answer
+    reply_to_comment: Reply to this comment
+    reply_to_answer: Reply to this answer
     reply_to_author: "Reply to %author%"
     reply_submit: Post reply
     replies_empty: No replies yet. Be the first to answer.
@@ -101,6 +102,12 @@ blog:
 
 comments:
   display_name: Display name
+  replied_to: replied to
+  edit: Modify
+  delete: Delete
+  save: Save changes
+  edit_placeholder: Update your comment
+  delete_confirm: Delete this comment?
   your_message: Your message
   your_comment: Your comment
   post: Post comment
@@ -110,9 +117,13 @@ comments:
   error:
     csrf: Unable to post your message right now.
     empty: Write a message before posting.
+    forbidden: You can only change comments that you posted.
+    not_found: Comment not found.
   notice:
     live: Your message is live.
     hidden: Your comment is hidden for review because it may contain inappropriate language.
+    updated: Your comment was updated.
+    deleted: Your comment was deleted.
 
 discussion:
   heading: Card discussion
@@ -188,6 +199,7 @@ card:
       not_found: Card not found.
       invalid_discussion: Invalid discussion type.
       invalid_language: Invalid language.
+      invalid_parent: The reply target could not be found.
 
 footer:
   tagline: An independent One Piece card community for browsing cards, following sets, and sharing opinions about collecting and playing.

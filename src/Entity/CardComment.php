@@ -23,6 +23,10 @@ class CardComment
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Card $card;
 
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
+    private ?self $parentComment = null;
+
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(onDelete: 'SET NULL')]
     private ?User $authorUser = null;
@@ -59,6 +63,8 @@ class CardComment
     public function getId(): ?int { return $this->id; }
     public function getCard(): Card { return $this->card; }
     public function setCard(Card $card): self { $this->card = $card; return $this; }
+    public function getParentComment(): ?self { return $this->parentComment; }
+    public function setParentComment(?self $parentComment): self { $this->parentComment = $parentComment; return $this; }
     public function getAuthorUser(): ?User { return $this->authorUser; }
     public function setAuthorUser(?User $authorUser): self { $this->authorUser = $authorUser; return $this; }
     public function getAuthorName(): string { return $this->authorName; }

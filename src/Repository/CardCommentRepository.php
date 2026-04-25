@@ -37,9 +37,27 @@ class CardCommentRepository extends ServiceEntityRepository
             ->setParameter('discussionType', $discussionType)
             ->setParameter('language', $language)
             ->setParameter('status', CardComment::STATUS_PUBLISHED)
-            ->orderBy('c.createdAt', 'DESC')
+            ->orderBy('c.createdAt', 'ASC')
+            ->addOrderBy('c.parentComment', 'ASC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    public function findOnePublishedForDiscussion(\App\Entity\Card $card, int $id, string $discussionType, string $language): ?CardComment
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere('c.id = :id')
+            ->andWhere('c.card = :card')
+            ->andWhere('c.discussionType = :discussionType')
+            ->andWhere('c.language = :language')
+            ->andWhere('c.moderationStatus = :status')
+            ->setParameter('id', $id)
+            ->setParameter('card', $card)
+            ->setParameter('discussionType', $discussionType)
+            ->setParameter('language', $language)
+            ->setParameter('status', CardComment::STATUS_PUBLISHED)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 }

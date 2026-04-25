@@ -2,12 +2,39 @@
 
 {% import _self as forum %}
 
-{% macro comment_branch(comments, thread, commentAuthorName) %}
+{% macro comment_branch(comments, topic, thread, commentAuthorName) %}
     <div class="comment-list comment-list-nested">
         {% for comment in comments %}
-            <article class="comment-item">
+            <article class="comment-item" id="comment-{{ comment.id }}">
                 <p>{{ comment.content|nl2br }}</p>
-                <small>{{ comment.authorName }} - {{ comment.createdAt }}</small>
+                <small>
+                    {% if comment.parentAuthorName is defined and comment.parentAuthorName %}
+                        {{ comment.authorName }} {{ 'comments.replied_to'|trans }} {{ comment.parentAuthorName }} - {{ comment.createdAt }}
+                    {% else %}
+                        {{ comment.authorName }} - {{ comment.createdAt }}
+                    {% endif %}
+                </small>
+
+                {% if comment.canManage %}
+                    <div class="comment-actions">
+                        <details class="comment-edit-box">
+                            <summary>{{ 'comments.edit'|trans }}</summary>
+                            <form class="comment-form comment-form-inline" method="post" action="{{ path('blog_comment_edit', { slug: topic.slug, threadId: thread.id, commentId: comment.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('blog_comment_manage_' ~ comment.id) }}">
+                                <label>
+                                    {{ 'comments.your_message'|trans }}
+                                    <textarea name="content" rows="3" maxlength="2000" minlength="3" required>{{ comment.content }}</textarea>
+                                </label>
+                                <button type="submit">{{ 'comments.save'|trans }}</button>
+                            </form>
+                        </details>
+
+                        <form method="post" action="{{ path('blog_comment_delete', { slug: topic.slug, threadId: thread.id, commentId: comment.id }) }}" onsubmit="return confirm('{{ 'comments.delete_confirm'|trans|e('js') }}');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('blog_comment_manage_' ~ comment.id) }}">
+                            <button class="comment-danger-button" type="submit">{{ 'comments.delete'|trans }}</button>
+                        </form>
+                    </div>
+                {% endif %}
 
                 <details class="comment-reply-box">
                     <summary>{{ 'blog.thread.reply_to_comment'|trans }}</summary>
@@ -27,7 +54,7 @@
                 </details>
 
                 {% if comment.children is not empty %}
-                    {{ _self.comment_branch(comment.children, thread, commentAuthorName) }}
+                    {{ _self.comment_branch(comment.children, topic, thread, commentAuthorName) }}
                 {% endif %}
             </article>
         {% endfor %}
@@ -61,7 +88,7 @@
         <h2>{{ 'blog.thread.reply_heading'|trans }}</h2>
 
         {% if comments is not empty %}
-            {{ forum.comment_branch(comments, thread, commentAuthorName) }}
+            {{ forum.comment_branch(comments, topic, thread, commentAuthorName) }}
         {% else %}
             <p class="muted">{{ 'blog.thread.replies_empty'|trans }}</p>
         {% endif %}

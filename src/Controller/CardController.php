@@ -140,7 +140,7 @@ class CardController extends AbstractController
             'topic' => $topic,
             'topicView' => $this->localizedTopic($topic),
             'thread' => $thread,
-            'comments' => $this->buildBlogCommentTree($commentRepository->findForThread($thread)),
+            'comments' => $this->buildBlogCommentTree($request, $commentRepository->findForThread($thread)),
             'commentAuthorName' => $this->resolveCommentAuthorName($request),
         ]);
     }
@@ -261,6 +261,7 @@ class CardController extends AbstractController
                 'defaultLanguage' => $defaultLanguage,
             ],
             'initialComments' => $cardEntity ? $this->serializeCardComments(
+                $request,
                 $commentRepository->findForCardDiscussion($cardEntity, CardComment::DISCUSSION_TRADING, $defaultLanguage)
             ) : [],
             'commentAuthorName' => $this->resolveCommentAuthorName($request),
@@ -288,6 +289,7 @@ class CardController extends AbstractController
         if ($request->isMethod('POST')) {
             $discussionType = (string) $request->request->get('discussion_type', CardComment::DISCUSSION_TRADING);
             $language = (string) $request->request->get('language', array_key_first($languageMap) ?: 'english');
+            $action = (string) $request->request->get('action', 'create');
 
             if (!isset($discussionTypes[$discussionType])) {
                 return $this->json(['error' => $this->translator->trans('card.comments.error.invalid_discussion')], Response::HTTP_BAD_REQUEST);
@@ -301,14 +303,76 @@ class CardController extends AbstractController
                 return $this->json(['error' => $this->translator->trans('comments.error.csrf')], Response::HTTP_FORBIDDEN);
             }
 
+            if ($action === 'edit' || $action === 'delete') {
+                $commentId = $this->positiveRequestInt($request, 'comment_id');
+                $comment = $commentId > 0
+                    ? $commentRepository->findOnePublishedForDiscussion($cardEntity, $commentId, $discussionType, $language)
+                    : null;
+
+                if (!$comment) {
+                    return $this->json(['error' => $this->translator->trans('comments.error.not_found')], Response::HTTP_NOT_FOUND);
+                }
+
+                if (!$this->canManageComment($request, $comment)) {
+                    return $this->json(['error' => $this->translator->trans('comments.error.forbidden')], Response::HTTP_FORBIDDEN);
+                }
+
+                if ($action === 'delete') {
+                    $entityManager->remove($comment);
+                    $entityManager->flush();
+
+                    return $this->json($this->cardCommentPayload($request, $cardEntity, $discussionType, $language, $discussionTypes, $languageMap, $commentRepository));
+                }
+
+                $content = trim((string) $request->request->get('content', ''));
+
+                if ($content === '') {
+                    return $this->json(['error' => $this->translator->trans('comments.error.empty')], Response::HTTP_BAD_REQUEST);
+                }
+
+                $comment->setContent($content);
+                $validationError = $this->firstValidationError($validator->validate($comment));
+
+                if ($validationError !== null) {
+                    return $this->json(['error' => $validationError], Response::HTTP_BAD_REQUEST);
+                }
+
+                $moderationResult = $commentModerationService->moderate($comment->getContent());
+
+                if (!$moderationResult->isApproved()) {
+                    $comment
+                        ->setModerationStatus(CardComment::STATUS_BLOCKED)
+                        ->setModerationReason($moderationResult->getReason());
+                }
+
+                $entityManager->flush();
+
+                $payload = $this->cardCommentPayload($request, $cardEntity, $discussionType, $language, $discussionTypes, $languageMap, $commentRepository);
+
+                if (!$moderationResult->isApproved()) {
+                    $payload['notice'] = $this->translator->trans('comments.notice.hidden');
+                }
+
+                return $this->json($payload, $moderationResult->isApproved() ? Response::HTTP_OK : Response::HTTP_ACCEPTED);
+            }
+
             $content = trim((string) $request->request->get('content', ''));
+            $parentId = $this->positiveRequestInt($request, 'parent_id');
+            $parentComment = $parentId > 0
+                ? $commentRepository->findOnePublishedForDiscussion($cardEntity, $parentId, $discussionType, $language)
+                : null;
 
             if ($content === '') {
                 return $this->json(['error' => $this->translator->trans('comments.error.empty')], Response::HTTP_BAD_REQUEST);
             }
 
+            if ($parentId > 0 && $parentComment === null) {
+                return $this->json(['error' => $this->translator->trans('card.comments.error.invalid_parent')], Response::HTTP_BAD_REQUEST);
+            }
+
             $comment = (new CardComment())
                 ->setCard($cardEntity)
+                ->setParentComment($parentComment)
                 ->setAuthorUser($this->currentUser())
                 ->setAuthorName($this->resolveCommentAuthorName($request))
                 ->setDiscussionType($discussionType)
@@ -332,15 +396,7 @@ class CardController extends AbstractController
             $entityManager->persist($comment);
             $entityManager->flush();
 
-            $payload = [
-                'discussionType' => $discussionType,
-                'discussionLabel' => $discussionTypes[$discussionType] ?? 'Trading',
-                'language' => $language,
-                'languageLabel' => $languageMap[$language] ?? ucfirst($language),
-                'comments' => $this->serializeCardComments(
-                    $commentRepository->findForCardDiscussion($cardEntity, $discussionType, $language)
-                ),
-            ];
+            $payload = $this->cardCommentPayload($request, $cardEntity, $discussionType, $language, $discussionTypes, $languageMap, $commentRepository);
 
             if (!$moderationResult->isApproved()) {
                 $payload['notice'] = $this->translator->trans('comments.notice.hidden');
@@ -366,6 +422,7 @@ class CardController extends AbstractController
             'language' => $language,
             'languageLabel' => $languageMap[$language] ?? ucfirst($language),
             'comments' => $this->serializeCardComments(
+                $request,
                 $commentRepository->findForCardDiscussion($cardEntity, $discussionType, $language)
             ),
         ]);
@@ -468,7 +525,7 @@ class CardController extends AbstractController
         }
 
         $content = trim((string) $request->request->get('content', ''));
-        $parentId = $request->request->getInt('parent_id', 0);
+        $parentId = $this->positiveRequestInt($request, 'parent_id');
         $parentComment = $parentId > 0 ? $commentRepository->findOnePublishedForThread($parentId, $thread) : null;
 
         if ($parentId > 0 && $parentComment === null) {
@@ -515,9 +572,157 @@ class CardController extends AbstractController
         $this->addFlash('warning', $this->translator->trans('comments.notice.hidden'));
     }
 
+    #[Route('/blog/{slug}/topics/{threadId}/comments/{commentId}/edit', name: 'blog_comment_edit', requirements: ['slug' => 'trading|game', 'threadId' => '\d+', 'commentId' => '\d+'], methods: ['POST'])]
+    public function editBlogComment(
+        string $slug,
+        int $threadId,
+        int $commentId,
+        Request $request,
+        BlogTopicRepository $topicRepository,
+        BlogThreadRepository $threadRepository,
+        BlogCommentRepository $commentRepository,
+        EntityManagerInterface $entityManager,
+        ValidatorInterface $validator,
+        CommentModerationService $commentModerationService,
+    ): Response {
+        [$topic, $thread, $comment] = $this->resolveBlogCommentAction($slug, $threadId, $commentId, $topicRepository, $threadRepository, $commentRepository, $entityManager);
+
+        if (!$this->isCsrfTokenValid('blog_comment_manage_' . $comment->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', $this->translator->trans('comments.error.csrf'));
+
+            return $this->redirectToRoute('blog_thread', ['slug' => $topic->getSlug(), 'threadId' => $thread->getId()]);
+        }
+
+        if (!$this->canManageComment($request, $comment)) {
+            $this->addFlash('error', $this->translator->trans('comments.error.forbidden'));
+
+            return $this->redirectToRoute('blog_thread', ['slug' => $topic->getSlug(), 'threadId' => $thread->getId()]);
+        }
+
+        $comment->setContent((string) $request->request->get('content', ''));
+        $validationError = $this->firstValidationError($validator->validate($comment));
+
+        if ($validationError !== null) {
+            $this->addFlash('error', $validationError);
+
+            return $this->redirect($this->generateUrl('blog_thread', ['slug' => $topic->getSlug(), 'threadId' => $thread->getId()]) . '#comment-' . $comment->getId());
+        }
+
+        $moderationResult = $commentModerationService->moderate($comment->getContent());
+
+        if (!$moderationResult->isApproved()) {
+            $comment
+                ->setModerationStatus(BlogComment::STATUS_BLOCKED)
+                ->setModerationReason($moderationResult->getReason());
+        }
+
+        $entityManager->flush();
+        $this->addFlash($moderationResult->isApproved() ? 'success' : 'warning', $this->translator->trans($moderationResult->isApproved() ? 'comments.notice.updated' : 'comments.notice.hidden'));
+
+        return $this->redirect($this->generateUrl('blog_thread', ['slug' => $topic->getSlug(), 'threadId' => $thread->getId()]) . '#replies');
+    }
+
+    #[Route('/blog/{slug}/topics/{threadId}/comments/{commentId}/delete', name: 'blog_comment_delete', requirements: ['slug' => 'trading|game', 'threadId' => '\d+', 'commentId' => '\d+'], methods: ['POST'])]
+    public function deleteBlogComment(
+        string $slug,
+        int $threadId,
+        int $commentId,
+        Request $request,
+        BlogTopicRepository $topicRepository,
+        BlogThreadRepository $threadRepository,
+        BlogCommentRepository $commentRepository,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        [$topic, $thread, $comment] = $this->resolveBlogCommentAction($slug, $threadId, $commentId, $topicRepository, $threadRepository, $commentRepository, $entityManager);
+
+        if (!$this->isCsrfTokenValid('blog_comment_manage_' . $comment->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', $this->translator->trans('comments.error.csrf'));
+
+            return $this->redirectToRoute('blog_thread', ['slug' => $topic->getSlug(), 'threadId' => $thread->getId()]);
+        }
+
+        if (!$this->canManageComment($request, $comment)) {
+            $this->addFlash('error', $this->translator->trans('comments.error.forbidden'));
+
+            return $this->redirectToRoute('blog_thread', ['slug' => $topic->getSlug(), 'threadId' => $thread->getId()]);
+        }
+
+        $entityManager->remove($comment);
+        $entityManager->flush();
+        $this->addFlash('success', $this->translator->trans('comments.notice.deleted'));
+
+        return $this->redirect($this->generateUrl('blog_thread', ['slug' => $topic->getSlug(), 'threadId' => $thread->getId()]) . '#replies');
+    }
+
     private function resolveCommentAuthorName(Request $request): string
     {
         return $this->currentUser()?->getUsername() ?? $this->guestCommentAlias($request);
+    }
+
+    private function canManageComment(Request $request, BlogComment|CardComment $comment): bool
+    {
+        $currentUser = $this->currentUser();
+
+        if ($comment->getAuthorUser() !== null) {
+            return $currentUser !== null && $comment->getAuthorUser()->getId() === $currentUser->getId();
+        }
+
+        return $comment->getAuthorName() === $this->guestCommentAlias($request);
+    }
+
+    /**
+     * @return array{0: BlogTopic, 1: BlogThread, 2: BlogComment}
+     */
+    private function resolveBlogCommentAction(
+        string $slug,
+        int $threadId,
+        int $commentId,
+        BlogTopicRepository $topicRepository,
+        BlogThreadRepository $threadRepository,
+        BlogCommentRepository $commentRepository,
+        EntityManagerInterface $entityManager,
+    ): array {
+        $this->syncBlogTopics($topicRepository, $entityManager);
+        $topic = $topicRepository->findOneBy(['slug' => $slug]);
+
+        if (!$topic) {
+            throw $this->createNotFoundException('Blog topic not found.');
+        }
+
+        $thread = $threadRepository->findOnePublishedForRoom($threadId, $topic);
+
+        if (!$thread) {
+            throw $this->createNotFoundException('Discussion topic not found.');
+        }
+
+        $comment = $commentRepository->findOnePublishedForThread($commentId, $thread);
+
+        if (!$comment) {
+            throw $this->createNotFoundException('Comment not found.');
+        }
+
+        return [$topic, $thread, $comment];
+    }
+
+    private function cardCommentPayload(
+        Request $request,
+        Card $card,
+        string $discussionType,
+        string $language,
+        array $discussionTypes,
+        array $languageMap,
+        CardCommentRepository $commentRepository,
+    ): array {
+        return [
+            'discussionType' => $discussionType,
+            'discussionLabel' => $discussionTypes[$discussionType] ?? 'Trading',
+            'language' => $language,
+            'languageLabel' => $languageMap[$language] ?? ucfirst($language),
+            'comments' => $this->serializeCardComments(
+                $request,
+                $commentRepository->findForCardDiscussion($card, $discussionType, $language)
+            ),
+        ];
     }
 
     private function cardDiscussionTypes(): array
@@ -612,15 +817,34 @@ class CardController extends AbstractController
         return $normalized !== '' ? $normalized : 'english';
     }
 
-    private function serializeCardComments(array $comments): array
+    private function serializeCardComments(Request $request, array $comments): array
     {
-        return array_map(static fn (CardComment $comment): array => [
+        $byParent = [];
+
+        foreach ($comments as $comment) {
+            $parentId = $comment->getParentComment()?->getId() ?? 0;
+            $byParent[$parentId][] = $comment;
+        }
+
+        return $this->serializeCardCommentBranch($request, $byParent, 0);
+    }
+
+    /**
+     * @param array<int, list<CardComment>> $byParent
+     */
+    private function serializeCardCommentBranch(Request $request, array $byParent, int $parentId): array
+    {
+        return array_map(fn (CardComment $comment): array => [
+            'id' => (int) $comment->getId(),
             'authorName' => $comment->getAuthorName(),
+            'parentAuthorName' => $comment->getParentComment()?->getAuthorName(),
+            'canManage' => $this->canManageComment($request, $comment),
             'content' => $comment->getContent(),
             'createdAt' => $comment->getCreatedAt()->format('Y-m-d H:i'),
             'discussionType' => $comment->getDiscussionType(),
             'language' => $comment->getLanguage(),
-        ], $comments);
+            'children' => $this->serializeCardCommentBranch($request, $byParent, (int) $comment->getId()),
+        ], $byParent[$parentId] ?? []);
     }
 
     private function currentUser(): ?User
@@ -657,11 +881,22 @@ class CardController extends AbstractController
         return null;
     }
 
+    private function positiveRequestInt(Request $request, string $key): int
+    {
+        $value = trim((string) $request->request->get($key, ''));
+
+        if ($value === '') {
+            return 0;
+        }
+
+        return ctype_digit($value) ? max(0, (int) $value) : 0;
+    }
+
     /**
      * @param list<BlogComment> $comments
      * @return list<array{id: int, authorName: string, content: string, createdAt: string, children: list<array{id: int, authorName: string, content: string, createdAt: string, children: list<mixed>}>}>
      */
-    private function buildBlogCommentTree(array $comments): array
+    private function buildBlogCommentTree(Request $request, array $comments): array
     {
         $byParent = [];
 
@@ -670,14 +905,14 @@ class CardController extends AbstractController
             $byParent[$parentId][] = $comment;
         }
 
-        return $this->commentBranch($byParent, 0);
+        return $this->commentBranch($request, $byParent, 0);
     }
 
     /**
      * @param array<int, list<BlogComment>> $byParent
      * @return list<array{id: int, authorName: string, content: string, createdAt: string, children: list<mixed>}>
      */
-    private function commentBranch(array $byParent, int $parentId): array
+    private function commentBranch(Request $request, array $byParent, int $parentId): array
     {
         $branch = [];
 
@@ -685,9 +920,11 @@ class CardController extends AbstractController
             $branch[] = [
                 'id' => (int) $comment->getId(),
                 'authorName' => $comment->getAuthorName(),
+                'parentAuthorName' => $comment->getParentComment()?->getAuthorName(),
+                'canManage' => $this->canManageComment($request, $comment),
                 'content' => $comment->getContent(),
                 'createdAt' => $comment->getCreatedAt()->format('Y-m-d H:i'),
-                'children' => $this->commentBranch($byParent, (int) $comment->getId()),
+                'children' => $this->commentBranch($request, $byParent, (int) $comment->getId()),
             ];
         }
 

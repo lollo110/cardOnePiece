@@ -74,6 +74,16 @@
         data-status-posting="{{ 'discussion.status.posting'|trans({'%topic%': '__TOPIC__', '%language%': '__LANGUAGE__'}) }}"
         data-error-load="{{ 'discussion.error.load'|trans }}"
         data-error-post="{{ 'discussion.error.post'|trans }}"
+        data-reply-comment-label="{{ 'blog.thread.reply_to_comment'|trans }}"
+        data-reply-answer-label="{{ 'blog.thread.reply_to_answer'|trans }}"
+        data-reply-placeholder="{{ 'blog.thread.reply_to_author'|trans({'%author%': '__AUTHOR__'}) }}"
+        data-reply-submit="{{ 'blog.thread.reply_submit'|trans }}"
+        data-replied-to-label="{{ 'comments.replied_to'|trans }}"
+        data-edit-label="{{ 'comments.edit'|trans }}"
+        data-delete-label="{{ 'comments.delete'|trans }}"
+        data-save-label="{{ 'comments.save'|trans }}"
+        data-edit-placeholder="{{ 'comments.edit_placeholder'|trans }}"
+        data-delete-confirm="{{ 'comments.delete_confirm'|trans }}"
     >
         <div class="discussion-toolbar">
             <label class="discussion-select">
@@ -106,21 +116,6 @@
             {{ 'discussion.status.showing'|trans({'%topic%': cardCommentOptions.discussionTypes[cardCommentOptions.defaultDiscussionType], '%language%': cardCommentOptions.languages|first.label}) }}
         </p>
 
-        <form class="comment-form" data-card-discussion-form>
-            <input type="hidden" name="_token" value="{{ csrf_token('card_comment_' ~ card.id) }}">
-            <input type="hidden" name="discussion_type" value="{{ cardCommentOptions.defaultDiscussionType }}" data-card-discussion-type-input>
-            <input type="hidden" name="language" value="{{ cardCommentOptions.defaultLanguage }}" data-card-discussion-language-input>
-            <label>
-                {{ 'comments.display_name'|trans }}
-                <input type="text" value="{{ commentAuthorName }}" readonly>
-            </label>
-            <label>
-                {{ 'comments.your_comment'|trans }}
-                <textarea name="content" rows="4" maxlength="2000" minlength="3" required placeholder="{{ 'card.comment.placeholder'|trans({'%card%': card.name_numbered ?? card.name}) }}"></textarea>
-            </label>
-            <button type="submit">{{ 'comments.post'|trans }}</button>
-        </form>
-
         <div class="comment-list" data-card-comments>
             {% for comment in initialComments %}
                 <article class="comment-item">
@@ -131,6 +126,22 @@
                 <p class="muted">{{ 'discussion.no_comments'|trans }}</p>
             {% endfor %}
         </div>
+
+        <form class="comment-form" data-card-discussion-form>
+            <input type="hidden" name="_token" value="{{ csrf_token('card_comment_' ~ card.id) }}">
+            <input type="hidden" name="discussion_type" value="{{ cardCommentOptions.defaultDiscussionType }}" data-card-discussion-type-input>
+            <input type="hidden" name="language" value="{{ cardCommentOptions.defaultLanguage }}" data-card-discussion-language-input>
+            <input type="hidden" name="parent_id" value="">
+            <label>
+                {{ 'comments.display_name'|trans }}
+                <input type="text" value="{{ commentAuthorName }}" readonly>
+            </label>
+            <label>
+                {{ 'comments.your_comment'|trans }}
+                <textarea name="content" rows="4" maxlength="2000" minlength="3" required placeholder="{{ 'card.comment.placeholder'|trans({'%card%': card.name_numbered ?? card.name}) }}"></textarea>
+            </label>
+            <button type="submit">{{ 'comments.post'|trans }}</button>
+        </form>
     </div>
 </section>
 

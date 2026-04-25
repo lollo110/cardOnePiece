@@ -102,6 +102,16 @@ const initializeStructure = () => {
         const statusPostingTemplate = discussion.dataset.statusPosting ?? 'Posting in __TOPIC__ / __LANGUAGE__...';
         const loadErrorText = discussion.dataset.errorLoad ?? 'Unable to load comments.';
         const postErrorText = discussion.dataset.errorPost ?? 'Unable to post comment.';
+        const replyCommentLabel = discussion.dataset.replyCommentLabel ?? 'Reply to this comment';
+        const replyAnswerLabel = discussion.dataset.replyAnswerLabel ?? 'Reply to this answer';
+        const replyPlaceholderTemplate = discussion.dataset.replyPlaceholder ?? 'Reply to __AUTHOR__';
+        const replySubmitText = discussion.dataset.replySubmit ?? 'Post reply';
+        const repliedToLabel = discussion.dataset.repliedToLabel ?? 'replied to';
+        const editLabel = discussion.dataset.editLabel ?? 'Modify';
+        const deleteLabel = discussion.dataset.deleteLabel ?? 'Delete';
+        const saveLabel = discussion.dataset.saveLabel ?? 'Save';
+        const editPlaceholder = discussion.dataset.editPlaceholder ?? 'Update your comment';
+        const deleteConfirm = discussion.dataset.deleteConfirm ?? 'Delete this comment?';
 
         let currentDiscussion = discussion.dataset.defaultDiscussion ?? 'trading';
         let currentLanguage = discussion.dataset.defaultLanguage ?? 'english';
@@ -112,6 +122,13 @@ const initializeStructure = () => {
         const renderStatus = (template) => template
             .replaceAll('__TOPIC__', discussionLabel())
             .replaceAll('__LANGUAGE__', languageLabel());
+        const commentMeta = (comment) => {
+            if (comment.parentAuthorName) {
+                return `${comment.authorName} ${repliedToLabel} ${comment.parentAuthorName} - ${comment.createdAt}`;
+            }
+
+            return `${comment.authorName} - ${comment.createdAt}`;
+        };
 
         const setLanguageButtons = () => {
             languageButtons.forEach((button) => {
@@ -126,7 +143,7 @@ const initializeStructure = () => {
 
             list.innerHTML = '';
 
-            if (!comments.length) {
+            if (!Array.isArray(comments) || !comments.length) {
                 const empty = document.createElement('p');
                 empty.className = 'muted';
                 empty.textContent = noCommentsText;
@@ -134,14 +151,168 @@ const initializeStructure = () => {
                 return;
             }
 
+            const renderBranch = (branch, target, depth = 1) => {
+                const branchList = document.createElement('div');
+                branchList.className = 'comment-list comment-list-nested';
+
+                branch.forEach((comment) => {
+                    const item = document.createElement('article');
+                    item.className = 'comment-item';
+
+                    const text = document.createElement('p');
+                    const meta = document.createElement('small');
+                    text.textContent = comment.content;
+                    meta.textContent = commentMeta(comment);
+                    item.append(text, meta, createManageBox(comment), createReplyBox(comment, depth));
+
+                    if (Array.isArray(comment.children) && comment.children.length) {
+                        renderBranch(comment.children, item, depth + 1);
+                    }
+
+                    branchList.append(item);
+                });
+
+                target.append(branchList);
+            };
+
+            const createReplyBox = (comment, depth = 0) => {
+                const details = document.createElement('details');
+                details.className = 'comment-reply-box';
+
+                const summary = document.createElement('summary');
+                summary.textContent = depth === 0 ? replyCommentLabel : replyAnswerLabel;
+
+                const replyForm = document.createElement('form');
+                replyForm.className = 'comment-form comment-form-inline';
+                replyForm.dataset.cardReplyForm = 'true';
+
+                const token = form?.querySelector('input[name="_token"]');
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '_token';
+                tokenInput.value = token instanceof HTMLInputElement ? token.value : '';
+
+                const parentInput = document.createElement('input');
+                parentInput.type = 'hidden';
+                parentInput.name = 'parent_id';
+                parentInput.value = String(comment.id ?? '');
+
+                const label = document.createElement('label');
+                label.textContent = '';
+
+                const textarea = document.createElement('textarea');
+                textarea.name = 'content';
+                textarea.rows = 3;
+                textarea.maxLength = 2000;
+                textarea.minLength = 3;
+                textarea.required = true;
+                textarea.placeholder = replyPlaceholderTemplate.replaceAll('__AUTHOR__', comment.authorName ?? '');
+
+                const button = document.createElement('button');
+                button.type = 'submit';
+                button.textContent = replySubmitText;
+
+                label.append(textarea);
+                replyForm.append(tokenInput, parentInput, label, button);
+                details.append(summary, replyForm);
+
+                return details;
+            };
+
+            const createManageBox = (comment) => {
+                const actions = document.createElement('div');
+                actions.className = 'comment-actions';
+
+                if (!comment.canManage) {
+                    return actions;
+                }
+
+                const editDetails = document.createElement('details');
+                editDetails.className = 'comment-edit-box';
+
+                const editSummary = document.createElement('summary');
+                editSummary.textContent = editLabel;
+
+                const editForm = document.createElement('form');
+                editForm.className = 'comment-form comment-form-inline';
+                editForm.dataset.cardManageForm = 'true';
+
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'edit';
+
+                const commentInput = document.createElement('input');
+                commentInput.type = 'hidden';
+                commentInput.name = 'comment_id';
+                commentInput.value = String(comment.id ?? '');
+
+                const token = form?.querySelector('input[name="_token"]');
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '_token';
+                tokenInput.value = token instanceof HTMLInputElement ? token.value : '';
+
+                const label = document.createElement('label');
+                const textarea = document.createElement('textarea');
+                textarea.name = 'content';
+                textarea.rows = 3;
+                textarea.maxLength = 2000;
+                textarea.minLength = 3;
+                textarea.required = true;
+                textarea.placeholder = editPlaceholder;
+                textarea.value = comment.content ?? '';
+
+                const saveButton = document.createElement('button');
+                saveButton.type = 'submit';
+                saveButton.textContent = saveLabel;
+
+                label.append(textarea);
+                editForm.append(actionInput, commentInput, tokenInput, label, saveButton);
+                editDetails.append(editSummary, editForm);
+
+                const deleteForm = document.createElement('form');
+                deleteForm.dataset.cardManageForm = 'true';
+
+                const deleteActionInput = document.createElement('input');
+                deleteActionInput.type = 'hidden';
+                deleteActionInput.name = 'action';
+                deleteActionInput.value = 'delete';
+
+                const deleteCommentInput = document.createElement('input');
+                deleteCommentInput.type = 'hidden';
+                deleteCommentInput.name = 'comment_id';
+                deleteCommentInput.value = String(comment.id ?? '');
+
+                const deleteTokenInput = document.createElement('input');
+                deleteTokenInput.type = 'hidden';
+                deleteTokenInput.name = '_token';
+                deleteTokenInput.value = token instanceof HTMLInputElement ? token.value : '';
+
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'comment-danger-button';
+                deleteButton.type = 'submit';
+                deleteButton.textContent = deleteLabel;
+
+                deleteForm.append(deleteActionInput, deleteCommentInput, deleteTokenInput, deleteButton);
+                actions.append(editDetails, deleteForm);
+
+                return actions;
+            };
+
             comments.forEach((comment) => {
                 const item = document.createElement('article');
                 item.className = 'comment-item';
                 const text = document.createElement('p');
                 const meta = document.createElement('small');
                 text.textContent = comment.content;
-                meta.textContent = `${comment.authorName} - ${comment.createdAt}`;
-                item.append(text, meta);
+                meta.textContent = commentMeta(comment);
+                item.append(text, meta, createManageBox(comment), createReplyBox(comment, 0));
+
+                if (Array.isArray(comment.children) && comment.children.length) {
+                    renderBranch(comment.children, item, 1);
+                }
+
                 list.append(item);
             });
         };
@@ -226,14 +397,12 @@ const initializeStructure = () => {
             });
         });
 
-        form?.addEventListener('submit', async (event) => {
-            event.preventDefault();
-
-            if (!commentsUrl || !(form instanceof HTMLFormElement)) {
+        const submitComment = async (submitForm) => {
+            if (!commentsUrl || !(submitForm instanceof HTMLFormElement)) {
                 return;
             }
 
-            const formData = new FormData(form);
+            const formData = new FormData(submitForm);
             formData.set('discussion_type', currentDiscussion);
             formData.set('language', currentLanguage);
             setStatus(renderStatus(statusPostingTemplate));
@@ -252,9 +421,13 @@ const initializeStructure = () => {
                     throw new Error(payload.error ?? 'Unable to post comment.');
                 }
 
-                const textarea = form.querySelector('textarea');
+                const textarea = submitForm.querySelector('textarea');
                 if (textarea instanceof HTMLTextAreaElement) {
                     textarea.value = '';
+                }
+
+                if (submitForm !== form) {
+                    submitForm.closest('details')?.removeAttribute('open');
                 }
 
                 renderComments(payload.comments ?? []);
@@ -266,6 +439,35 @@ const initializeStructure = () => {
                 setStatus(renderStatus(statusShowingTemplate));
             } catch (error) {
                 setStatus(error.message || postErrorText);
+            }
+        };
+
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await submitComment(form);
+        });
+
+        list?.addEventListener('submit', async (event) => {
+            const submittedForm = event.target;
+
+            if (!(submittedForm instanceof HTMLFormElement)) {
+                return;
+            }
+
+            if (submittedForm.dataset.cardManageForm === 'true') {
+                event.preventDefault();
+
+                if (new FormData(submittedForm).get('action') === 'delete' && !window.confirm(deleteConfirm)) {
+                    return;
+                }
+
+                await submitComment(submittedForm);
+                return;
+            }
+
+            if (submittedForm.dataset.cardReplyForm === 'true') {
+                event.preventDefault();
+                await submitComment(submittedForm);
             }
         });
     }

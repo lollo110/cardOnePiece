@@ -176,7 +176,8 @@ blog:
     original_post: Message d'origine
     reply_heading: Reponses
     reply_placeholder: "Repondre a %title%"
-    reply_to_comment: Repondre a cette reponse
+    reply_to_comment: Repondre a ce commentaire
+    reply_to_answer: Repondre a cette reponse
     reply_to_author: "Repondre a %author%"
     reply_submit: Publier la reponse
     replies_empty: Aucune reponse pour le moment. Soyez le premier a repondre.
@@ -187,6 +188,12 @@ blog:
 
 comments:
   display_name: Nom affiché
+  replied_to: a repondu a
+  edit: Modifier
+  delete: Supprimer
+  save: Enregistrer
+  edit_placeholder: Modifiez votre commentaire
+  delete_confirm: Supprimer ce commentaire ?
   your_message: Votre message
   your_comment: Votre commentaire
   post: Publier le commentaire
@@ -196,9 +203,13 @@ comments:
   error:
     csrf: Impossible de publier votre message pour le moment.
     empty: Écrivez un message avant de publier.
+    forbidden: Vous pouvez modifier uniquement vos propres commentaires.
+    not_found: Commentaire introuvable.
   notice:
     live: Votre message est en ligne.
     hidden: Votre commentaire est masqué pour vérification car il peut contenir un langage inapproprié.
+    updated: Votre commentaire a ete mis a jour.
+    deleted: Votre commentaire a ete supprime.
 
 discussion:
   heading: Discussion de la carte
@@ -274,6 +285,7 @@ card:
       not_found: Carte introuvable.
       invalid_discussion: Sujet de discussion invalide.
       invalid_language: Langue invalide.
+      invalid_parent: La reponse cible est introuvable.
 
 footer:
   tagline: Une communauté indépendante autour des cartes One Piece pour parcourir les cartes, suivre les séries et partager des avis sur la collection et le jeu.
