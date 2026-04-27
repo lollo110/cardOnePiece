@@ -1985,7 +1985,7 @@ button:active,
 
 .deck-builder-controls {
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(180px, 280px) 120px 180px;
+    grid-template-columns: minmax(220px, 1fr) minmax(180px, 280px) 120px;
     gap: 14px;
     align-items: end;
 }

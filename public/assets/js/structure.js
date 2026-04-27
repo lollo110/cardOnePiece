@@ -418,7 +418,6 @@ const initializeStructure = () => {
         const search = deckBuilder.querySelector('[data-deck-card-search]');
         const collectionSelect = deckBuilder.querySelector('[data-deck-card-collection]');
         const quantityInput = deckBuilder.querySelector('[data-deck-card-quantity]');
-        const sectionSelect = deckBuilder.querySelector('[data-deck-card-section]');
         const results = deckBuilder.querySelector('[data-deck-card-results]');
         const list = deckBuilder.querySelector('[data-deck-card-list]');
         const searchUrl = deckBuilder.dataset.searchUrl;
@@ -436,8 +435,6 @@ const initializeStructure = () => {
 
             return Math.max(1, Math.min(99, Number.parseInt(quantityInput.value || '1', 10) || 1));
         };
-
-        const selectedSection = () => sectionSelect instanceof HTMLSelectElement ? sectionSelect.value : 'main';
 
         const selectedCollection = () => collectionSelect instanceof HTMLSelectElement ? collectionSelect.value : '';
 
@@ -473,7 +470,7 @@ const initializeStructure = () => {
                 const meta = document.createElement('p');
                 title.textContent = card.name;
                 meta.className = 'deck-meta';
-                meta.textContent = [card.cardNumber, card.rarity, card.set, card.section].filter(Boolean).join(' - ');
+                meta.textContent = [card.cardNumber, card.rarity, card.set].filter(Boolean).join(' - ');
                 content.append(title, meta);
 
                 const quantity = document.createElement('input');
@@ -505,19 +502,13 @@ const initializeStructure = () => {
                 quantityHidden.name = `deck_cards[${index}][quantity]`;
                 quantityHidden.value = String(card.quantity);
 
-                const sectionHidden = document.createElement('input');
-                sectionHidden.type = 'hidden';
-                sectionHidden.name = `deck_cards[${index}][section]`;
-                sectionHidden.value = card.section;
-
-                item.append(content, quantity, remove, cardIdInput, quantityHidden, sectionHidden);
+                item.append(content, quantity, remove, cardIdInput, quantityHidden);
                 list.append(item);
             });
         };
 
         const addCard = (card) => {
-            const section = selectedSection();
-            const existing = selectedCards.find((selectedCard) => selectedCard.id === card.id && selectedCard.section === section);
+            const existing = selectedCards.find((selectedCard) => selectedCard.id === card.id);
 
             if (existing) {
                 existing.quantity = Math.min(99, existing.quantity + selectedQuantity());
@@ -525,7 +516,6 @@ const initializeStructure = () => {
                 selectedCards.push({
                     ...card,
                     quantity: selectedQuantity(),
-                    section,
                 });
             }
 
