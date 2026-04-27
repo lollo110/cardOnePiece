@@ -1,5 +1,7 @@
 twig:
     file_name_pattern: '*.twig'
+    globals:
+        paypal_donation_url: '%env(PAYPAL_DONATION_URL)%'
 
 when@test:
     twig:

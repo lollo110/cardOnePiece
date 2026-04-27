@@ -35,10 +35,10 @@ class SyncDailyCardsCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $state = $this->entityManager->find(CardSyncState::class, self::SYNC_NAME) ?? new CardSyncState(self::SYNC_NAME);
+        $state = $this->entityManager->find(CardSyncState::class, self::SYNC_NAME);
         $now = new \DateTimeImmutable();
 
-        if (!$input->getOption('force') && $this->alreadyRanToday($state, $now)) {
+        if ($state !== null && !$input->getOption('force') && $this->alreadyRanToday($state, $now)) {
             $io->success(sprintf('Card sync already ran today at %s.', $state->getLastRunAt()?->format('Y-m-d H:i:s')));
 
             return Command::SUCCESS;
@@ -50,6 +50,7 @@ class SyncDailyCardsCommand extends Command
             static fn (int $page, int $totalPages, string $label) => $io->writeln(sprintf('Synced expansion %d/%d: %s', $page, $totalPages, $label))
         );
 
+        $state = $this->entityManager->find(CardSyncState::class, self::SYNC_NAME) ?? new CardSyncState(self::SYNC_NAME);
         $state->setLastRunAt($now);
         $this->entityManager->persist($state);
         $this->entityManager->flush();

@@ -4,12 +4,16 @@ namespace App\Service;
 
 use App\Entity\Card;
 use App\Entity\CardEpisode;
+use App\Entity\CardLanguagePrice;
+use App\Entity\CardPriceHistory;
 use Doctrine\ORM\EntityManagerInterface;
 
 class CardImporter
 {
     private array $cardCache = [];
     private array $episodeCache = [];
+    private array $historyCache = [];
+    private array $languagePriceCache = [];
 
     private int $created = 0;
     private int $updated = 0;
@@ -30,36 +34,36 @@ class CardImporter
         $count = 0;
 
         foreach ($expansions as $index => $expansion) {
-            $nearMintAveragePrices = null;
-
-            try {
-                $nearMintAveragePrices = $this->catalogService->nearMintAveragePricesForExpansion($expansion);
-            } catch (\RuntimeException) {
-                $nearMintAveragePrices = null;
-            }
-
             foreach ($this->catalogService->cardsForExpansion($expansion) as $payload) {
+                $blueprintId = (int) ($payload['id'] ?? 0);
+                $nearMintPriceData = ['overall' => null, 'languages' => []];
+
+                try {
+                    $nearMintPriceData = $this->catalogService->nearMintAveragePriceDataForBlueprint($blueprintId);
+                } catch (\RuntimeException) {
+                    $nearMintPriceData = ['overall' => null, 'languages' => []];
+                }
+
                 $this->upsertCard(
                     $payload,
                     $expansion,
-                    is_array($nearMintAveragePrices)
-                        ? ($nearMintAveragePrices[(int) ($payload['id'] ?? 0)] ?? null)
-                        : null,
+                    $nearMintPriceData['overall'],
+                    $nearMintPriceData['languages'],
                 );
                 $count++;
+                unset($nearMintPriceData);
 
                 if ($count % $flushEvery === 0) {
-                    $this->entityManager->flush();
+                    $this->flushAndReleaseManagedEntities();
                 }
             }
 
             $onPageImported?->__invoke($index + 1, $totalPages, $this->catalogService->expansionLabel($expansion));
 
-            unset($nearMintAveragePrices);
             gc_collect_cycles();
         }
 
-        $this->entityManager->flush();
+        $this->flushAndReleaseManagedEntities();
 
         return [
             'seen' => $count,
@@ -73,12 +77,25 @@ class CardImporter
     {
         $this->cardCache = [];
         $this->episodeCache = [];
+        $this->historyCache = [];
+        $this->languagePriceCache = [];
         $this->created = 0;
         $this->updated = 0;
         $this->pricesUpdated = 0;
     }
 
-    private function upsertCard(array $payload, array $expansionPayload, ?int $averageNearMintPriceCents = null): void
+    private function flushAndReleaseManagedEntities(): void
+    {
+        $this->entityManager->flush();
+        $this->entityManager->clear();
+        $this->cardCache = [];
+        $this->episodeCache = [];
+        $this->historyCache = [];
+        $this->languagePriceCache = [];
+        gc_collect_cycles();
+    }
+
+    private function upsertCard(array $payload, array $expansionPayload, ?int $averageNearMintPriceCents = null, array $languagePrices = []): void
     {
         $apiId = (int) ($payload['id'] ?? 0);
 
@@ -122,6 +139,8 @@ class CardImporter
             ])
             ->setUpdatedAt($priceUpdatedAt);
 
+        $this->entityManager->persist($card);
+
         if ($averageNearMintPriceCents !== null) {
             $card
                 ->setAverageNearMintPriceCents($averageNearMintPriceCents)
@@ -133,7 +152,82 @@ class CardImporter
                 ->setPriceUpdatedAt($priceUpdatedAt);
         }
 
-        $this->entityManager->persist($card);
+        $this->syncLanguagePrices($card, $languagePrices, $priceUpdatedAt);
+    }
+
+    private function syncLanguagePrices(Card $card, array $languagePrices, \DateTimeImmutable $priceUpdatedAt): void
+    {
+        $repository = $this->entityManager->getRepository(CardLanguagePrice::class);
+        $cacheKey = $this->cardPriceCacheKey($card);
+        $existingPrices = [];
+
+        foreach ($repository->findBy(['card' => $card]) as $existingPrice) {
+            $existingPrices[$existingPrice->getLanguageKey()] = $existingPrice;
+            $this->languagePriceCache[$cacheKey][$existingPrice->getLanguageKey()] = $existingPrice;
+        }
+
+        $seenLanguages = [];
+
+        foreach ($languagePrices as $languagePrice) {
+            $languageKey = trim((string) ($languagePrice['language_key'] ?? ''));
+            $languageLabel = trim((string) ($languagePrice['language_label'] ?? ''));
+            $priceCents = $languagePrice['average_near_mint_price_cents'] ?? null;
+
+            if ($languageKey === '' || $languageLabel === '' || !is_numeric($priceCents)) {
+                continue;
+            }
+
+            $seenLanguages[$languageKey] = true;
+            $price = $this->languagePriceCache[$cacheKey][$languageKey]
+                ?? $existingPrices[$languageKey]
+                ?? $repository->findOneBy(['card' => $card, 'languageKey' => $languageKey])
+                ?? new CardLanguagePrice();
+            $price
+                ->setCard($card)
+                ->setLanguageKey($languageKey)
+                ->setLanguageLabel($languageLabel)
+                ->setAverageNearMintPriceCents((int) $priceCents)
+                ->setProductCount(max(1, (int) ($languagePrice['product_count'] ?? 1)))
+                ->setUpdatedAt($priceUpdatedAt);
+
+            $this->languagePriceCache[$cacheKey][$languageKey] = $price;
+            $this->entityManager->persist($price);
+            $this->recordPriceHistory($card, $languageKey, $languageLabel, (int) $priceCents, max(1, (int) ($languagePrice['product_count'] ?? 1)), $priceUpdatedAt);
+            $this->pricesUpdated++;
+        }
+
+        foreach ($existingPrices as $languageKey => $existingPrice) {
+            if (!isset($seenLanguages[$languageKey])) {
+                $this->entityManager->remove($existingPrice);
+                unset($this->languagePriceCache[$cacheKey][$languageKey]);
+            }
+        }
+    }
+
+    private function cardPriceCacheKey(Card $card): string
+    {
+        return $card->getId() !== null ? 'card-' . $card->getId() : 'object-' . spl_object_id($card);
+    }
+
+    private function recordPriceHistory(Card $card, string $languageKey, string $languageLabel, int $priceCents, int $productCount, \DateTimeImmutable $recordedAt): void
+    {
+        $recordedOn = $recordedAt->setTime(0, 0);
+        $cacheKey = sprintf('%s-%s-%s', $this->cardPriceCacheKey($card), $languageKey, $recordedOn->format('Y-m-d'));
+        $repository = $this->entityManager->getRepository(CardPriceHistory::class);
+        $history = $this->historyCache[$cacheKey]
+            ?? $repository->findOneForDay($card, $languageKey, $recordedOn)
+            ?? new CardPriceHistory();
+
+        $history
+            ->setCard($card)
+            ->setLanguageKey($languageKey)
+            ->setLanguageLabel($languageLabel)
+            ->setAverageNearMintPriceCents($priceCents)
+            ->setProductCount($productCount)
+            ->setRecordedOn($recordedOn);
+
+        $this->historyCache[$cacheKey] = $history;
+        $this->entityManager->persist($history);
     }
 
     private function upsertEpisode(?array $payload): ?CardEpisode

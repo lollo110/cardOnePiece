@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Card;
 use App\Entity\CardComment;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -59,5 +60,31 @@ class CardCommentRepository extends ServiceEntityRepository
             ->setParameter('status', CardComment::STATUS_PUBLISHED)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    public function findTopCommentedCard(): ?array
+    {
+        $result = $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('topCard AS card')
+            ->addSelect('COUNT(c.id) AS commentCount')
+            ->from(Card::class, 'topCard')
+            ->innerJoin(CardComment::class, 'c', 'WITH', 'c.card = topCard')
+            ->andWhere('c.moderationStatus = :status')
+            ->setParameter('status', CardComment::STATUS_PUBLISHED)
+            ->groupBy('topCard.id')
+            ->orderBy('commentCount', 'DESC')
+            ->addOrderBy('MAX(c.createdAt)', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if (!$result) {
+            return null;
+        }
+
+        $result['commentCount'] = (int) $result['commentCount'];
+
+        return $result;
     }
 }

@@ -2,6 +2,7 @@
 
 parameters:
     env(CARDTRADER_API_TOKEN): ''
+    env(PAYPAL_DONATION_URL): ''
 
 services:
     _defaults:

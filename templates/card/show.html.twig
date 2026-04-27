@@ -26,6 +26,16 @@
 {% block title %}{{ card.name_numbered ?? card.name }}{% endblock %}
 
 {% block body %}
+{% set priceByLanguage = {} %}
+{% for price in card.language_prices ?? [] %}
+    {% set priceByLanguage = priceByLanguage|merge({ (price.language_key): price }) %}
+{% endfor %}
+{% set firstLanguagePrice = (card.language_prices ?? [])|first %}
+{% set defaultLanguageKey = cardCommentOptions.defaultLanguage %}
+{% set defaultLanguagePrice = priceByLanguage[defaultLanguageKey] ?? firstLanguagePrice %}
+{% set activePriceLanguageKey = defaultLanguagePrice ? defaultLanguagePrice.language_key : defaultLanguageKey %}
+{% set defaultPriceLabel = defaultLanguagePrice ? '€' ~ defaultLanguagePrice.average_near_mint_price : (card.average_near_mint_price is not null ? '€' ~ card.average_near_mint_price : 'common.na'|trans) %}
+
 <a class="back-link" href="{{ path('cards') }}">{{ 'cards.back'|trans }}</a>
 
 <section class="detail-hero">
@@ -51,8 +61,33 @@
             <div><dt>{{ 'card.fields.set'|trans }}</dt><dd>{{ card.episode.name ?? 'common.na'|trans }}</dd></div>
             <div><dt>{{ 'card.fields.set_code'|trans }}</dt><dd>{{ card.episode.code ?? 'common.na'|trans }}</dd></div>
             <div><dt>{{ 'card.fields.rarity'|trans }}</dt><dd>{{ card.rarity ?? 'common.na'|trans }}</dd></div>
-            <div><dt>{{ 'card.fields.average_near_mint'|trans }}</dt><dd>{{ card.average_near_mint_price is not null ? '€' ~ card.average_near_mint_price : 'common.na'|trans }}</dd></div>
-            <div><dt>{{ 'card.fields.languages'|trans }}</dt><dd>{{ card.languages is not empty ? card.languages|join(', ') : 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.average_near_mint'|trans }}</dt><dd data-card-price-display>{{ defaultPriceLabel|raw }}</dd></div>
+            <div>
+                <dt>{{ 'card.fields.languages'|trans }}</dt>
+                <dd>
+                    {% if cardCommentOptions.languages is not empty %}
+                        <select
+                            class="card-price-language-select"
+                            data-card-price-switcher
+                            data-card-price-history="{{ card.price_history|json_encode|e('html_attr') }}"
+                            data-empty-history="{{ 'card.prices.history_empty'|trans }}"
+                        >
+                            {% for language in cardCommentOptions.languages %}
+                                {% set price = priceByLanguage[language.key] ?? null %}
+                                <option
+                                    value="{{ language.key }}"
+                                    data-price="{{ price ? '€' ~ price.average_near_mint_price : 'common.na'|trans }}"
+                                    {% if activePriceLanguageKey == language.key %}selected{% endif %}
+                                >
+                                    {{ language.label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    {% else %}
+                        {{ 'common.na'|trans }}
+                    {% endif %}
+                </dd>
+            </div>
         </dl>
     </div>
 </section>
@@ -88,7 +123,7 @@
         <div class="discussion-toolbar">
             <label class="discussion-select">
                 {{ 'discussion.topic_label'|trans }}
-                <select data-card-discussion-type>
+                <select data-card-discussion-type style="margin: auto">
                     {% for key, label in cardCommentOptions.discussionTypes %}
                         <option value="{{ key }}" {% if key == cardCommentOptions.defaultDiscussionType %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
@@ -145,6 +180,15 @@
     </div>
 </section>
 
+<section class="detail-panel price-history-panel">
+    <h2>{{ 'card.prices.history_heading'|trans }}</h2>
+    <div
+        class="price-history-chart"
+        data-card-price-chart
+        data-empty-history="{{ 'card.prices.history_empty'|trans }}"
+    ></div>
+</section>
+
 <section class="detail-grid">
     <article class="detail-panel">
         <h2>{{ 'card.info.heading'|trans }}</h2>
@@ -153,7 +197,7 @@
             <div><dt>{{ 'card.fields.number'|trans }}</dt><dd>{{ card.card_number ?? 'common.na'|trans }}</dd></div>
             <div><dt>{{ 'card.fields.rarity'|trans }}</dt><dd>{{ card.rarity ?? 'common.na'|trans }}</dd></div>
             <div><dt>{{ 'card.fields.version'|trans }}</dt><dd>{{ card.version ?? 'common.na'|trans }}</dd></div>
-            <div><dt>{{ 'card.fields.average_near_mint'|trans }}</dt><dd>{{ card.average_near_mint_price is not null ? '€' ~ card.average_near_mint_price : 'common.na'|trans }}</dd></div>
+            <div><dt>{{ 'card.fields.average_near_mint'|trans }}</dt><dd data-card-price-display>{{ defaultPriceLabel|raw }}</dd></div>
             <div><dt>{{ 'card.fields.price_updated'|trans }}</dt><dd>{{ card.price_updated_at ? card.price_updated_at|date('Y-m-d H:i') : 'common.na'|trans }}</dd></div>
             <div><dt>{{ 'card.fields.languages'|trans }}</dt><dd>{{ card.languages is not empty ? card.languages|join(', ') : 'common.na'|trans }}</dd></div>
             <div><dt>{{ 'card.fields.source'|trans }}</dt><dd>{{ card.source ?? 'CardTrader' }}</dd></div>
@@ -163,6 +207,25 @@
     <article class="detail-panel">
         <h2>{{ 'card.set.heading'|trans }}</h2>
         {{ cardMacros.render_value(card.episode ?? {}) }}
+    </article>
+
+    <article class="detail-panel">
+        <h2>{{ 'card.prices.heading'|trans }}</h2>
+        {% if card.language_prices is defined and card.language_prices is not empty %}
+            <dl class="detail-list">
+                {% for price in card.language_prices %}
+                    <div>
+                        <dt>{{ price.language_label }}</dt>
+                        <dd>
+                            €{{ price.average_near_mint_price }}
+                            <span class="muted">{{ 'card.prices.listings'|trans({'%count%': price.product_count}) }}</span>
+                        </dd>
+                    </div>
+                {% endfor %}
+            </dl>
+        {% else %}
+            <p class="muted">{{ 'card.prices.empty'|trans }}</p>
+        {% endif %}
     </article>
 
     <article class="detail-panel">

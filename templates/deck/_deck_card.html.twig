@@ -1,0 +1,18 @@
+<article class="deck-card">
+    <p class="eyebrow">{{ deck.archetype ?: 'deck.archetype_empty'|trans }}</p>
+    <h3>
+        <a href="{{ path('deck_show', { id: deck.id }) }}">{{ deck.title }}</a>
+    </h3>
+    <p class="deck-meta">
+        {% if deck.owner %}
+            {{ 'deck.by'|trans({'%username%': deck.owner.username}) }}
+        {% else %}
+            {{ 'deck.by_unknown'|trans }}
+        {% endif %}
+        · {{ 'deck.cards'|trans({'%count%': deck.totalCards}) }}
+    </p>
+    {% if deck.description %}
+        <p>{{ deck.description|length > 150 ? deck.description|slice(0, 150) ~ '...' : deck.description }}</p>
+    {% endif %}
+    <a class="card-detail-link" href="{{ path('deck_show', { id: deck.id }) }}">{{ 'deck.open'|trans }}</a>
+</article>

@@ -3,12 +3,18 @@
 namespace App\Service;
 
 use App\Entity\Card;
+use App\Entity\CardLanguagePrice;
+use App\Entity\CardPriceHistory;
+use App\Repository\CardLanguagePriceRepository;
+use App\Repository\CardPriceHistoryRepository;
 use App\Repository\CardRepository;
 
 class CardService
 {
     public function __construct(
         private readonly CardRepository $cardRepository,
+        private readonly CardLanguagePriceRepository $cardLanguagePriceRepository,
+        private readonly CardPriceHistoryRepository $cardPriceHistoryRepository,
     ) {
     }
 
@@ -77,6 +83,14 @@ class CardService
         );
     }
 
+    public function mostValuableCards(int $limit = 16): array
+    {
+        return array_map(
+            fn (Card $card) => $this->cardToArray($card),
+            $this->cardRepository->findMostValuable($limit)
+        );
+    }
+
     public function collectionPage(int $page = 1, string $sort = 'relevance'): array
     {
         return $this->searchCards(null, $page, $sort);
@@ -140,10 +154,44 @@ class CardService
             'average_near_mint_price' => $card->getAverageNearMintPriceCents() !== null
                 ? number_format($card->getAverageNearMintPriceCents() / 100, 2, '.', '')
                 : null,
+            'language_prices' => array_map(
+                fn (CardLanguagePrice $price): array => [
+                    'language_key' => $price->getLanguageKey(),
+                    'language_label' => $price->getLanguageLabel(),
+                    'average_near_mint_price_cents' => $price->getAverageNearMintPriceCents(),
+                    'average_near_mint_price' => number_format($price->getAverageNearMintPriceCents() / 100, 2, '.', ''),
+                    'product_count' => $price->getProductCount(),
+                    'updated_at' => $price->getUpdatedAt()->format(\DateTimeInterface::ATOM),
+                ],
+                $this->cardLanguagePriceRepository->findForCard($card)
+            ),
+            'price_history' => $this->priceHistoryToArray($card),
             'price_updated_at' => $card->getPriceUpdatedAt()?->format(\DateTimeInterface::ATOM),
             'source' => 'CardTrader',
             'updated_at' => $card->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ];
+    }
+
+    private function priceHistoryToArray(Card $card): array
+    {
+        $history = [];
+
+        foreach ($this->cardPriceHistoryRepository->findRecentForCard($card) as $row) {
+            $history[$row->getLanguageKey()] ??= [
+                'language_key' => $row->getLanguageKey(),
+                'language_label' => $row->getLanguageLabel(),
+                'points' => [],
+            ];
+
+            $history[$row->getLanguageKey()]['points'][] = [
+                'date' => $row->getRecordedOn()->format('Y-m-d'),
+                'price' => number_format($row->getAverageNearMintPriceCents() / 100, 2, '.', ''),
+                'price_cents' => $row->getAverageNearMintPriceCents(),
+                'product_count' => $row->getProductCount(),
+            ];
+        }
+
+        return array_values($history);
     }
 
 }

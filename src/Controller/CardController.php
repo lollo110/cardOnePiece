@@ -14,6 +14,7 @@ use App\Repository\BlogTopicRepository;
 use App\Repository\CardCommentRepository;
 use App\Service\CardService;
 use App\Service\CommentModerationService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -47,10 +48,20 @@ class CardController extends AbstractController
     }
 
     #[Route('/', name: 'app_home')]
-    public function home(CardService $service, BlogTopicRepository $topicRepository, EntityManagerInterface $entityManager): Response
+    public function home(
+        CardService $service,
+        BlogTopicRepository $topicRepository,
+        BlogThreadRepository $threadRepository,
+        CardCommentRepository $cardCommentRepository,
+        EntityManagerInterface $entityManager,
+    ): Response
     {
         return $this->render('home/index.html.twig', [
-            'recentCards' => $service->recentCards(8),
+            'recentCards' => $service->recentCards(12),
+            'valuableCards' => $service->mostValuableCards(16),
+            'topCommentedCard' => $cardCommentRepository->findTopCommentedCard(),
+            'topTradingThread' => $threadRepository->findTopCommentedForTopicSlug('trading'),
+            'topGameThread' => $threadRepository->findTopCommentedForTopicSlug('game'),
             'topics' => $this->localizedTopics($this->syncBlogTopics($topicRepository, $entityManager)),
         ]);
     }
@@ -116,6 +127,7 @@ class CardController extends AbstractController
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator,
         CommentModerationService $commentModerationService,
+        NotificationService $notificationService,
     ): Response {
         $this->syncBlogTopics($topicRepository, $entityManager);
         $topic = $topicRepository->findOneBy(['slug' => $slug]);
@@ -131,7 +143,7 @@ class CardController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            $this->handleBlogReplySubmission($request, $topic, $thread, $commentRepository, $entityManager, $validator, $commentModerationService);
+            $this->handleBlogReplySubmission($request, $topic, $thread, $commentRepository, $entityManager, $validator, $commentModerationService, $notificationService);
 
             return $this->redirect($this->generateUrl('blog_thread', ['slug' => $slug, 'threadId' => $threadId]) . '#replies');
         }
@@ -229,7 +241,16 @@ class CardController extends AbstractController
             return $this->json([]);
         }
 
-        return $this->json($service->suggestCards($query));
+        return $this->json(array_map(
+            fn (array $suggestion): array => [
+                'label' => $suggestion['label'],
+                'url' => $this->generateUrl('card_show', [
+                    'id' => $suggestion['id'],
+                    'name' => $suggestion['name'],
+                ]),
+            ],
+            $service->suggestCards($query)
+        ));
     }
 
     #[Route('/cards/{id}', name: 'card_show', requirements: ['id' => '\d+'], methods: ['GET'])]
@@ -276,6 +297,7 @@ class CardController extends AbstractController
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator,
         CommentModerationService $commentModerationService,
+        NotificationService $notificationService,
     ): JsonResponse {
         $cardEntity = $entityManager->getRepository(Card::class)->findOneBy(['apiId' => $id]);
 
@@ -394,6 +416,16 @@ class CardController extends AbstractController
             }
 
             $entityManager->persist($comment);
+            if ($parentComment && $moderationResult->isApproved()) {
+                $notificationService->notifyReply(
+                    $parentComment->getAuthorUser(),
+                    $this->currentUser(),
+                    $comment->getAuthorName(),
+                    \App\Entity\Notification::SOURCE_CARD,
+                    $cardEntity->getNameNumbered() ?? $cardEntity->getName(),
+                    $this->generateUrl('card_show', ['id' => $cardEntity->getApiId()]) . '#comments'
+                );
+            }
             $entityManager->flush();
 
             $payload = $this->cardCommentPayload($request, $cardEntity, $discussionType, $language, $discussionTypes, $languageMap, $commentRepository);
@@ -516,6 +548,7 @@ class CardController extends AbstractController
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator,
         CommentModerationService $commentModerationService,
+        NotificationService $notificationService,
     ): void
     {
         if (!$this->isCsrfTokenValid('blog_reply_' . $thread->getId(), (string) $request->request->get('_token'))) {
@@ -562,6 +595,18 @@ class CardController extends AbstractController
 
         $entityManager->persist($comment);
         $entityManager->flush();
+
+        if ($parentComment && $moderationResult->isApproved()) {
+            $notificationService->notifyReply(
+                $parentComment->getAuthorUser(),
+                $this->currentUser(),
+                $comment->getAuthorName(),
+                \App\Entity\Notification::SOURCE_BLOG,
+                $thread->getTitle(),
+                $this->generateUrl('blog_thread', ['slug' => $topic->getSlug(), 'threadId' => $thread->getId()]) . '#comment-' . $comment->getId()
+            );
+            $entityManager->flush();
+        }
 
         if ($moderationResult->isApproved()) {
             $this->addFlash('success', $this->translator->trans('blog.thread.notice.reply_live'));

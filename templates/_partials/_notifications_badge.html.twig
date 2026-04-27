@@ -1,0 +1,6 @@
+<a class="notification-link" href="{{ path('notifications') }}" aria-label="{{ 'notifications.title'|trans }}">
+    <span aria-hidden="true">&#128276;</span>
+    {% if unreadNotifications > 0 %}
+        <strong>{{ unreadNotifications }}</strong>
+    {% endif %}
+</a>

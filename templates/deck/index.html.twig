@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'deck.hero.title'|trans }}{% endblock %}
+
+{% block body %}
+<section class="home-hero deck-hero">
+    <p class="eyebrow">{{ 'nav.decks'|trans }}</p>
+    <h1>{{ 'deck.hero.title'|trans }}</h1>
+    <p>{{ 'deck.hero.description'|trans }}</p>
+    {% if app.user %}
+        <a class="card-detail-link" href="{{ path('deck_new') }}">{{ 'deck.new'|trans }}</a>
+    {% else %}
+        <a class="card-detail-link" href="{{ path('app_login') }}">{{ 'deck.sign_in_to_create'|trans }}</a>
+    {% endif %}
+</section>
+
+{% if myDecks is not empty %}
+    <section class="detail-panel deck-section">
+        <div class="section-heading">
+            <h2>{{ 'deck.mine'|trans }}</h2>
+        </div>
+        <div class="deck-grid">
+            {% for deck in myDecks %}
+                {% include 'deck/_deck_card.html.twig' with { deck: deck } only %}
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}
+
+<section class="detail-panel deck-section">
+    <div class="section-heading">
+        <h2>{{ 'deck.public'|trans }}</h2>
+        {% if app.user %}
+            <a href="{{ path('deck_new') }}">{{ 'deck.new'|trans }}</a>
+        {% endif %}
+    </div>
+
+    {% if publicDecks is empty %}
+        <p class="muted">{{ 'deck.empty'|trans }}</p>
+    {% else %}
+        <div class="deck-grid">
+            {% for deck in publicDecks %}
+                {% include 'deck/_deck_card.html.twig' with { deck: deck } only %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

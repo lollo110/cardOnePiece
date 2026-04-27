@@ -11,6 +11,7 @@
             <h2>{{ 'footer.explore'|trans }}</h2>
             <a href="{{ path('app_home') }}">{{ 'nav.home'|trans }}</a>
             <a href="{{ path('cards') }}">{{ 'nav.collection'|trans }}</a>
+            <a href="{{ path('decks') }}">{{ 'nav.decks'|trans }}</a>
             <a href="{{ path('blog') }}">{{ 'nav.blog'|trans }}</a>
             <a href="{{ path('blog_topic', { slug: 'trading' }) }}">{{ 'blog.topic.trading.button'|trans }}</a>
             <a href="{{ path('blog_topic', { slug: 'game' }) }}">{{ 'blog.topic.game.button'|trans }}</a>
@@ -36,6 +37,21 @@
             <a href="{{ path('site_terms_of_use') }}">{{ 'site.terms.title'|trans }}</a>
             <a href="{{ path('site_cookies') }}">{{ 'site.cookies.title'|trans }}</a>
         </nav>
+
+        <section class="footer-block footer-donation">
+            <h2>{{ 'footer.donation.title'|trans }}</h2>
+            <p>{{ 'footer.donation.text'|trans }}</p>
+            {% if paypal_donation_url %}
+                <a class="footer-donation-button" href="{{ paypal_donation_url }}" target="_blank" rel="noopener noreferrer">
+                    {{ 'footer.donation.button'|trans }}
+                </a>
+            {% else %}
+                <a class="footer-donation-button" href="{{ path('site_contact') }}">
+                    {{ 'footer.donation.configure'|trans }}
+                </a>
+            {% endif %}
+            <small>{{ 'footer.donation.note'|trans }}</small>
+        </section>
     </div>
 
     <div class="site-footer-bottom">

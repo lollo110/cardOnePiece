@@ -1,29 +1,36 @@
 <header class="site-header">
     <a class="site-logo" href="{{ path('app_home') }}">{{ 'site.name'|trans }}</a>
 
-    <div class="site-meta">
+    <form method="get" action="{{ path('cards') }}" class="header-search">
+        <div class="search-autocomplete">
+            <input
+                type="text"
+                name="q"
+                value="{{ app.request.query.get('q') }}"
+                placeholder="{{ 'search.placeholder'|trans }}"
+                autocomplete="off"
+                data-suggest-url="{{ path('cards_suggestions') }}"
+                data-view-all-label="{{ 'search.view_all'|trans }}"
+                data-search-input
+            >
+            <div class="suggestions" data-suggestions hidden></div>
+        </div>
+        <button>{{ 'search.button'|trans }}</button>
+    </form>
+
+    <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="{{ 'nav.menu'|trans }}" data-site-menu-toggle>
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <div class="site-meta" id="site-menu" data-site-menu>
         <nav class="site-nav">
             <a href="{{ path('app_home') }}">{{ 'nav.home'|trans }}</a>
             <a href="{{ path('cards') }}">{{ 'nav.collection'|trans }}</a>
+            <a href="{{ path('decks') }}">{{ 'nav.decks'|trans }}</a>
             <a href="{{ path('blog') }}">{{ 'nav.blog'|trans }}</a>
         </nav>
-
-        <form method="get" action="{{ path('cards') }}" class="header-search">
-            <div class="search-autocomplete">
-                <input
-                    type="text"
-                    name="q"
-                    value="{{ app.request.query.get('q') }}"
-                    placeholder="{{ 'search.placeholder'|trans }}"
-                    autocomplete="off"
-                    data-suggest-url="{{ path('cards_suggestions') }}"
-                    data-view-all-label="{{ 'search.view_all'|trans }}"
-                    data-search-input
-                >
-                <div class="suggestions" data-suggestions hidden></div>
-            </div>
-            <button>{{ 'search.button'|trans }}</button>
-        </form>
 
         <div class="site-locale" aria-label="{{ 'locale.switch'|trans }}">
             <a class="{% if app.request.locale == 'en' %}is-active{% endif %}" href="{{ path('site_switch_locale', { locale: 'en' }) }}">EN</a>
@@ -32,6 +39,7 @@
 
         <div class="site-auth">
             {% if app.user %}
+                {{ render(controller('App\\Controller\\NotificationController::badge')) }}
                 <span class="site-user">{{ 'auth.hello'|trans({'%username%': app.user.username}) }}</span>
                 <a href="{{ path('app_logout') }}">{{ 'auth.sign_out'|trans }}</a>
             {% else %}

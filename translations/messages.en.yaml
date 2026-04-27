@@ -1,7 +1,15 @@
 nav:
   home: Home
   collection: Collection
+  decks: Decks
   blog: Blog
+  menu: Menu
+
+notifications:
+  eyebrow: Account
+  title: Notifications
+  empty: No notifications yet.
+  reply: "%author% replied to your comment on %target%."
 
 locale:
   switch: Switch language
@@ -50,9 +58,19 @@ home:
   recent:
     title: Recently updated cards
     link: View collection
+  valuable:
+    title: Most valuable cards
   rooms:
     title: Discussion rooms
     link: View discussions
+  top:
+    card_label: Top commented card
+    trading_label: Top commented trading topic
+    game_label: Top commented game topic
+    comments: "%count% comments"
+    empty_card: No card comments yet. Open a card and start the first discussion.
+    empty_trading: No trading topic has replies yet.
+    empty_game: No game topic has replies yet.
 
 blog:
   section: Discussion
@@ -183,6 +201,12 @@ card:
     cardtrader: CardTrader ID
     tcgplayer: TCGplayer ID
     cardmarket: Cardmarket ID
+  prices:
+    heading: Near Mint prices by language
+    history_heading: Price history
+    history_empty: No price history yet. Run the daily sync to add the first point.
+    listings: "(%count% listings)"
+    empty: No language-specific Near Mint price is available yet.
   fields:
     name: Name
     number: Card number
@@ -201,12 +225,68 @@ card:
       invalid_language: Invalid language.
       invalid_parent: The reply target could not be found.
 
+deck:
+  hero:
+    title: Community decks
+    description: Create, share, and browse One Piece Card Game decklists built from the site collection.
+  new: Create deck
+  sign_in_to_create: Sign in to create a deck
+  mine: My decks
+  public: Public decks
+  empty: No decks yet.
+  open: Open deck
+  title: Deck title
+  archetype: Archetype
+  archetype_empty: Decklist
+  description: Description
+  visibility: Visibility
+  public_visibility: Public
+  private_visibility: Private
+  decklist: Decklist
+  decklist_help: Paste one card per line. You can use quantities and card codes.
+  decklist_placeholder: "Leader:\n1 OP01-001\nMain:\n4 OP01-025\n4 Monkey.D.Luffy OP14-034\nDON:\n10 DON!!"
+  builder:
+    help: Search cards, choose a quantity, and add them with images.
+    search: Search card
+    search_placeholder: Search by name or code
+    collection: Collection
+    all_collections: All collections
+    quantity: Quantity
+    section: Section
+    selected: Selected cards
+    empty: No cards added yet.
+    no_results: No cards found.
+    add: Add
+    remove: Remove
+  create: Save deck
+  back: Back to decks
+  by: "By %username%"
+  by_unknown: Community deck
+  cards: "%count% cards"
+  cards_heading: Deck cards
+  section:
+    leader: Leader
+    main: Main deck
+    don: DON!!
+    side: Side deck
+  notice:
+    created: Deck created.
+    login_required: Sign in to create a deck.
+    no_cards: Add at least one card that exists in the collection.
+    unmatched: "Some lines could not be matched: %lines%"
+
 footer:
   tagline: An independent One Piece card community for browsing cards, following sets, and sharing opinions about collecting and playing.
   explore: Explore
   account: Account
   legal: Legal
   contact: Contact
+  donation:
+    title: Support the site
+    text: Help keep Pirate Card Blog online, improve the tools, and support new community features.
+    button: Donate with PayPal
+    configure: Contact me to support
+    note: Donations are optional and help with hosting and development.
   bottom: Independent fan project focused on community discussion and card discovery.
 
 site:

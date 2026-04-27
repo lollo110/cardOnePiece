@@ -1,8 +1,318 @@
 const initializeStructure = () => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const searchInput = document.querySelector('[data-search-input]');
     const suggestionsBox = document.querySelector('[data-suggestions]');
     const discussion = document.querySelector('[data-card-discussion]');
     const cardResults = document.querySelector('[data-card-results]');
+    const carousels = Array.from(document.querySelectorAll('[data-card-carousel]'));
+    const deckBuilder = document.querySelector('[data-deck-builder]');
+    const siteHeader = document.querySelector('.site-header');
+    const menuToggle = document.querySelector('[data-site-menu-toggle]');
+    const siteMenu = document.querySelector('[data-site-menu]');
+    const priceSwitcher = document.querySelector('[data-card-price-switcher]');
+
+    document.body.classList.add('is-booted');
+
+    if (!reducedMotion) {
+        Array.from(document.querySelectorAll('.page > *')).forEach((element, index) => {
+            if (!(element instanceof HTMLElement) || element.dataset.pageMotionReady === 'true') {
+                return;
+            }
+
+            element.dataset.pageMotionReady = 'true';
+            element.classList.add('page-motion-item');
+            element.style.setProperty('--page-motion-delay', `${Math.min(index, 8) * 90}ms`);
+        });
+
+        if (document.body.dataset.pointerMotionReady !== 'true') {
+            document.body.dataset.pointerMotionReady = 'true';
+            let pointerFrame = null;
+            document.addEventListener('pointermove', (event) => {
+                if (pointerFrame !== null) {
+                    return;
+                }
+
+                pointerFrame = window.requestAnimationFrame(() => {
+                    document.documentElement.style.setProperty('--pointer-x', `${event.clientX}px`);
+                    document.documentElement.style.setProperty('--pointer-y', `${event.clientY}px`);
+                    pointerFrame = null;
+                });
+            });
+        }
+
+        const revealSelectors = [
+            '.page > *',
+            '.page section',
+            '.page article',
+            '.page h1',
+            '.page h2',
+            '.page h3',
+            '.page p',
+            '.page form',
+            '.page label',
+            '.page input',
+            '.page select',
+            '.page textarea',
+            '.page button',
+            '.page a.card-detail-link',
+            '.page a.back-link',
+            '.page .card-item',
+            '.page .card-image',
+            '.page .card-content > *',
+            '.page .topic-card',
+            '.page .topic-card > *',
+            '.page .home-top-card',
+            '.page .home-top-card > *',
+            '.page .section-heading',
+            '.page .section-heading > *',
+            '.page .detail-list > div',
+            '.page .card-tags span',
+            '.page .language-button',
+            '.page .card-price-language-select',
+            '.page .comment-item',
+            '.page .notification-item',
+            '.page .info-page-section',
+        ].join(',');
+        const revealTargets = Array.from(document.querySelectorAll(revealSelectors))
+            .filter((target, index, targets) => target instanceof HTMLElement && targets.indexOf(target) === index);
+
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) {
+                    return;
+                }
+
+                entry.target.classList.add('is-visible');
+                revealObserver.unobserve(entry.target);
+            });
+        }, {
+            threshold: 0.14,
+            rootMargin: '0px 0px -8% 0px',
+        });
+
+        const revealParentRank = new Map();
+        revealTargets.forEach((target, index) => {
+            if (!(target instanceof HTMLElement) || target.dataset.revealReady === 'true') {
+                return;
+            }
+
+            const parent = target.closest('section, article, form, .detail-summary, .detail-panel, .card-item, .topic-card, .home-top-card, .page') ?? document.body;
+            const parentCount = revealParentRank.get(parent) ?? 0;
+            revealParentRank.set(parent, parentCount + 1);
+
+            target.dataset.revealReady = 'true';
+            target.classList.add('reveal-on-scroll');
+            target.style.setProperty('--reveal-delay', `${Math.min(parentCount, 12) * 70}ms`);
+            revealObserver.observe(target);
+        });
+    }
+
+    if (!reducedMotion) {
+        Array.from(document.querySelectorAll('.detail-summary, .detail-panel, .home-hero, .collection-tools, .topic-card, .card-item')).forEach((element) => {
+            if (!(element instanceof HTMLElement) || element.dataset.tiltReady === 'true') {
+                return;
+            }
+
+            element.dataset.tiltReady = 'true';
+            element.classList.add('tilt-ready');
+
+            element.addEventListener('pointermove', (event) => {
+                const rect = element.getBoundingClientRect();
+                const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+                const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+
+                element.style.setProperty('--tilt-x', `${(-y * 5).toFixed(2)}deg`);
+                element.style.setProperty('--tilt-y', `${(x * 6).toFixed(2)}deg`);
+                element.style.setProperty('--lift', '-8px');
+            });
+
+            element.addEventListener('pointerleave', () => {
+                element.style.removeProperty('--tilt-x');
+                element.style.removeProperty('--tilt-y');
+                element.style.removeProperty('--lift');
+            });
+        });
+
+        Array.from(document.querySelectorAll('button, .card-detail-link, .back-link, .site-auth a, .site-nav a, .topic-card a, .card-content a')).forEach((element) => {
+            if (!(element instanceof HTMLElement) || element.dataset.rippleReady === 'true') {
+                return;
+            }
+
+            element.dataset.rippleReady = 'true';
+            element.classList.add('js-ripple');
+            element.addEventListener('pointerdown', (event) => {
+                const rect = element.getBoundingClientRect();
+                const ripple = document.createElement('span');
+                const size = Math.max(rect.width, rect.height);
+
+                ripple.className = 'ripple-dot';
+                ripple.style.width = `${size}px`;
+                ripple.style.height = `${size}px`;
+                ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
+                ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
+                element.append(ripple);
+                window.setTimeout(() => ripple.remove(), 650);
+            });
+        });
+    }
+
+    if (priceSwitcher && priceSwitcher.dataset.jsReady !== 'true') {
+        priceSwitcher.dataset.jsReady = 'true';
+        const priceDisplays = Array.from(document.querySelectorAll('[data-card-price-display]'));
+        const priceChart = document.querySelector('[data-card-price-chart]');
+        const emptyHistoryText = priceSwitcher.dataset.emptyHistory ?? priceChart?.dataset.emptyHistory ?? 'No price history yet.';
+        let priceHistory = [];
+
+        try {
+            priceHistory = JSON.parse(priceSwitcher.dataset.cardPriceHistory ?? '[]');
+        } catch (error) {
+            priceHistory = [];
+        }
+
+        const renderPriceChart = (languageKey) => {
+            if (!(priceChart instanceof HTMLElement)) {
+                return;
+            }
+
+            const history = priceHistory.find((entry) => entry.language_key === languageKey);
+            const points = Array.isArray(history?.points) ? history.points : [];
+            priceChart.innerHTML = '';
+
+            if (!points.length) {
+                const empty = document.createElement('p');
+                empty.className = 'muted';
+                empty.textContent = emptyHistoryText;
+                priceChart.append(empty);
+                return;
+            }
+
+            const svgNamespace = 'http://www.w3.org/2000/svg';
+            const width = 720;
+            const height = 280;
+            const padding = 44;
+            const prices = points.map((point) => Number(point.price));
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            const priceRange = Math.max(maxPrice - minPrice, 1);
+            const xForIndex = (index) => points.length === 1
+                ? width / 2
+                : padding + (index / (points.length - 1)) * (width - padding * 2);
+            const yForPrice = (price) => height - padding - ((price - minPrice) / priceRange) * (height - padding * 2);
+            const pathData = points.map((point, index) => {
+                const command = index === 0 ? 'M' : 'L';
+                return `${command} ${xForIndex(index).toFixed(2)} ${yForPrice(Number(point.price)).toFixed(2)}`;
+            }).join(' ');
+
+            const svg = document.createElementNS(svgNamespace, 'svg');
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.setAttribute('role', 'img');
+            svg.setAttribute('aria-label', `${history.language_label} price history`);
+
+            const axis = document.createElementNS(svgNamespace, 'path');
+            axis.setAttribute('d', `M ${padding} ${padding} V ${height - padding} H ${width - padding}`);
+            axis.setAttribute('class', 'price-chart-axis');
+            svg.append(axis);
+
+            const line = document.createElementNS(svgNamespace, 'path');
+            line.setAttribute('d', pathData);
+            line.setAttribute('class', 'price-chart-line');
+            line.setAttribute('pathLength', '1');
+            svg.append(line);
+
+            points.forEach((point, index) => {
+                const dot = document.createElementNS(svgNamespace, 'circle');
+                dot.setAttribute('cx', xForIndex(index).toFixed(2));
+                dot.setAttribute('cy', yForPrice(Number(point.price)).toFixed(2));
+                dot.setAttribute('r', '4');
+                dot.setAttribute('class', 'price-chart-dot');
+
+                const title = document.createElementNS(svgNamespace, 'title');
+                title.textContent = `${point.date}: \u20ac${point.price}`;
+                dot.append(title);
+                svg.append(dot);
+            });
+
+            const minLabel = document.createElementNS(svgNamespace, 'text');
+            minLabel.setAttribute('x', String(padding));
+            minLabel.setAttribute('y', String(height - 12));
+            minLabel.setAttribute('class', 'price-chart-label');
+            minLabel.textContent = `\u20ac${minPrice.toFixed(2)}`;
+            svg.append(minLabel);
+
+            const maxLabel = document.createElementNS(svgNamespace, 'text');
+            maxLabel.setAttribute('x', String(padding));
+            maxLabel.setAttribute('y', '24');
+            maxLabel.setAttribute('class', 'price-chart-label');
+            maxLabel.textContent = `\u20ac${maxPrice.toFixed(2)}`;
+            svg.append(maxLabel);
+
+            const firstDate = document.createElementNS(svgNamespace, 'text');
+            firstDate.setAttribute('x', String(padding));
+            firstDate.setAttribute('y', String(height - 16));
+            firstDate.setAttribute('class', 'price-chart-date');
+            firstDate.textContent = points[0].date;
+            svg.append(firstDate);
+
+            const lastDate = document.createElementNS(svgNamespace, 'text');
+            lastDate.setAttribute('x', String(width - padding));
+            lastDate.setAttribute('y', String(height - 16));
+            lastDate.setAttribute('text-anchor', 'end');
+            lastDate.setAttribute('class', 'price-chart-date');
+            lastDate.textContent = points[points.length - 1].date;
+            svg.append(lastDate);
+
+            priceChart.append(svg);
+        };
+
+        const updateSelectedPrice = () => {
+            const selectedOption = priceSwitcher.selectedOptions?.[0];
+
+            if (!selectedOption) {
+                return;
+            }
+
+            priceDisplays.forEach((display) => {
+                display.textContent = selectedOption.dataset.price ?? '';
+            });
+
+            renderPriceChart(selectedOption.value);
+        };
+
+        priceSwitcher.addEventListener('change', updateSelectedPrice);
+        updateSelectedPrice();
+    }
+
+    if (siteHeader && menuToggle && siteMenu && menuToggle.dataset.jsReady !== 'true') {
+        menuToggle.dataset.jsReady = 'true';
+
+        const setMenuOpen = (isOpen) => {
+            siteHeader.classList.toggle('is-menu-open', isOpen);
+            menuToggle.classList.toggle('is-open', isOpen);
+            menuToggle.setAttribute('aria-expanded', String(isOpen));
+        };
+
+        menuToggle.addEventListener('click', () => {
+            setMenuOpen(!siteHeader.classList.contains('is-menu-open'));
+        });
+
+        siteMenu.addEventListener('click', (event) => {
+            if (event.target instanceof HTMLAnchorElement) {
+                setMenuOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                setMenuOpen(false);
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.matchMedia('(min-width: 901px)').matches) {
+                setMenuOpen(false);
+            }
+        });
+    }
 
     if (searchInput && suggestionsBox && searchInput.dataset.jsReady !== 'true') {
         searchInput.dataset.jsReady = 'true';
@@ -20,9 +330,21 @@ const initializeStructure = () => {
             list.className = 'suggestions-list';
 
             suggestions.forEach((suggestion) => {
+                const label = typeof suggestion === 'string' ? suggestion : suggestion.label;
+                const url = typeof suggestion === 'string' ? '' : suggestion.url;
+
+                if (!label) {
+                    return;
+                }
+
                 const button = document.createElement('button');
                 button.type = 'button';
-                button.textContent = suggestion;
+                button.textContent = label;
+
+                if (url) {
+                    button.dataset.url = url;
+                }
+
                 list.append(button);
             });
 
@@ -74,6 +396,11 @@ const initializeStructure = () => {
                 return;
             }
 
+            if (event.target.dataset.url) {
+                window.location.href = event.target.dataset.url;
+                return;
+            }
+
             searchInput.value = event.target.textContent ?? '';
             clearSuggestions();
             searchInput.form?.submit();
@@ -85,6 +412,352 @@ const initializeStructure = () => {
             }
         });
     }
+
+    if (deckBuilder && deckBuilder.dataset.jsReady !== 'true') {
+        deckBuilder.dataset.jsReady = 'true';
+        const search = deckBuilder.querySelector('[data-deck-card-search]');
+        const collectionSelect = deckBuilder.querySelector('[data-deck-card-collection]');
+        const quantityInput = deckBuilder.querySelector('[data-deck-card-quantity]');
+        const sectionSelect = deckBuilder.querySelector('[data-deck-card-section]');
+        const results = deckBuilder.querySelector('[data-deck-card-results]');
+        const list = deckBuilder.querySelector('[data-deck-card-list]');
+        const searchUrl = deckBuilder.dataset.searchUrl;
+        const addLabel = deckBuilder.dataset.addLabel ?? 'Add';
+        const removeLabel = deckBuilder.dataset.removeLabel ?? 'Remove';
+        const emptyText = deckBuilder.dataset.emptyText ?? 'No cards added yet.';
+        const noResultsText = deckBuilder.dataset.noResultsText ?? 'No cards found.';
+        let searchTimeout = null;
+        let selectedCards = [];
+
+        const selectedQuantity = () => {
+            if (!(quantityInput instanceof HTMLInputElement)) {
+                return 1;
+            }
+
+            return Math.max(1, Math.min(99, Number.parseInt(quantityInput.value || '1', 10) || 1));
+        };
+
+        const selectedSection = () => sectionSelect instanceof HTMLSelectElement ? sectionSelect.value : 'main';
+
+        const selectedCollection = () => collectionSelect instanceof HTMLSelectElement ? collectionSelect.value : '';
+
+        const renderSelectedCards = () => {
+            if (!(list instanceof HTMLElement)) {
+                return;
+            }
+
+            list.innerHTML = '';
+
+            if (!selectedCards.length) {
+                const empty = document.createElement('p');
+                empty.className = 'muted';
+                empty.textContent = emptyText;
+                list.append(empty);
+                return;
+            }
+
+            selectedCards.forEach((card, index) => {
+                const item = document.createElement('article');
+                item.className = 'deck-builder-selected-card';
+
+                if (card.image) {
+                    const image = document.createElement('img');
+                    image.src = card.image;
+                    image.alt = card.name;
+                    image.loading = 'lazy';
+                    item.append(image);
+                }
+
+                const content = document.createElement('div');
+                const title = document.createElement('h3');
+                const meta = document.createElement('p');
+                title.textContent = card.name;
+                meta.className = 'deck-meta';
+                meta.textContent = [card.cardNumber, card.rarity, card.set, card.section].filter(Boolean).join(' - ');
+                content.append(title, meta);
+
+                const quantity = document.createElement('input');
+                quantity.type = 'number';
+                quantity.min = '1';
+                quantity.max = '99';
+                quantity.value = String(card.quantity);
+                quantity.setAttribute('aria-label', 'Quantity');
+                quantity.addEventListener('change', () => {
+                    card.quantity = Math.max(1, Math.min(99, Number.parseInt(quantity.value || '1', 10) || 1));
+                    renderSelectedCards();
+                });
+
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.textContent = removeLabel;
+                remove.addEventListener('click', () => {
+                    selectedCards = selectedCards.filter((_, cardIndex) => cardIndex !== index);
+                    renderSelectedCards();
+                });
+
+                const cardIdInput = document.createElement('input');
+                cardIdInput.type = 'hidden';
+                cardIdInput.name = `deck_cards[${index}][card_id]`;
+                cardIdInput.value = String(card.id);
+
+                const quantityHidden = document.createElement('input');
+                quantityHidden.type = 'hidden';
+                quantityHidden.name = `deck_cards[${index}][quantity]`;
+                quantityHidden.value = String(card.quantity);
+
+                const sectionHidden = document.createElement('input');
+                sectionHidden.type = 'hidden';
+                sectionHidden.name = `deck_cards[${index}][section]`;
+                sectionHidden.value = card.section;
+
+                item.append(content, quantity, remove, cardIdInput, quantityHidden, sectionHidden);
+                list.append(item);
+            });
+        };
+
+        const addCard = (card) => {
+            const section = selectedSection();
+            const existing = selectedCards.find((selectedCard) => selectedCard.id === card.id && selectedCard.section === section);
+
+            if (existing) {
+                existing.quantity = Math.min(99, existing.quantity + selectedQuantity());
+            } else {
+                selectedCards.push({
+                    ...card,
+                    quantity: selectedQuantity(),
+                    section,
+                });
+            }
+
+            renderSelectedCards();
+        };
+
+        const renderResults = (cards) => {
+            if (!(results instanceof HTMLElement)) {
+                return;
+            }
+
+            results.innerHTML = '';
+
+            if (!cards.length) {
+                const empty = document.createElement('p');
+                empty.className = 'muted';
+                empty.textContent = noResultsText;
+                results.append(empty);
+                return;
+            }
+
+            cards.forEach((card) => {
+                const item = document.createElement('article');
+                item.className = 'deck-builder-result-card';
+
+                if (card.image) {
+                    const image = document.createElement('img');
+                    image.src = card.image;
+                    image.alt = card.name;
+                    image.loading = 'lazy';
+                    item.append(image);
+                }
+
+                const content = document.createElement('div');
+                const title = document.createElement('h3');
+                const meta = document.createElement('p');
+                title.textContent = card.name;
+                meta.className = 'deck-meta';
+                meta.textContent = [card.cardNumber, card.rarity, card.set].filter(Boolean).join(' - ');
+                content.append(title, meta);
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = addLabel;
+                button.addEventListener('click', () => addCard(card));
+
+                item.append(content, button);
+                results.append(item);
+            });
+        };
+
+        const searchCards = () => {
+            window.clearTimeout(searchTimeout);
+            const query = search instanceof HTMLInputElement ? search.value.trim() : '';
+
+            if (!searchUrl || query.length < 2) {
+                results && (results.innerHTML = '');
+                return;
+            }
+
+            searchTimeout = window.setTimeout(async () => {
+                try {
+                    const url = new URL(searchUrl, window.location.origin);
+                    url.searchParams.set('q', query);
+
+                    if (selectedCollection() !== '') {
+                        url.searchParams.set('collection', selectedCollection());
+                    }
+
+                    const response = await fetch(url.toString(), {
+                        headers: { Accept: 'application/json' },
+                    });
+                    const cards = await response.json();
+
+                    if (!response.ok || !Array.isArray(cards)) {
+                        renderResults([]);
+                        return;
+                    }
+
+                    renderResults(cards);
+                } catch (error) {
+                    renderResults([]);
+                }
+            }, 220);
+        };
+
+        search?.addEventListener('input', searchCards);
+        collectionSelect?.addEventListener('change', searchCards);
+
+        renderSelectedCards();
+    }
+
+    carousels.forEach((carousel) => {
+        if (carousel.dataset.jsReady === 'true') {
+            return;
+        }
+
+        carousel.dataset.jsReady = 'true';
+        const track = carousel.querySelector('[data-card-carousel-track]');
+        const slides = Array.from(carousel.querySelectorAll('.card-carousel-slide'));
+        const hasPriceBadges = carousel.querySelector('.card-carousel-price') !== null;
+        const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+
+        if (!(track instanceof HTMLElement) || slides.length <= 1) {
+            return;
+        }
+
+        slides.forEach((slide) => {
+            const clone = slide.cloneNode(true);
+            clone.setAttribute('aria-hidden', 'true');
+            clone.dataset.carouselClone = 'true';
+            clone.querySelectorAll('a, button, input, textarea, select').forEach((element) => {
+                element.setAttribute('tabindex', '-1');
+            });
+            track.append(clone);
+        });
+
+        let offset = 0;
+        let lastFrame = null;
+        let isPaused = false;
+
+        const slideStep = () => {
+            const currentSlides = Array.from(track.querySelectorAll('.card-carousel-slide'));
+            const firstSlide = currentSlides[0];
+            const secondSlide = currentSlides[1];
+
+            if (firstSlide instanceof HTMLElement && secondSlide instanceof HTMLElement) {
+                return secondSlide.offsetLeft - firstSlide.offsetLeft;
+            }
+
+            if (firstSlide instanceof HTMLElement) {
+                const style = window.getComputedStyle(track);
+                const gap = Number.parseFloat(style.columnGap || style.gap || '0');
+
+                return firstSlide.offsetWidth + (Number.isFinite(gap) ? gap : 0);
+            }
+
+            return 0;
+        };
+
+        const recyclePassedSlides = () => {
+            let step = slideStep();
+
+            while (step > 0 && offset >= step) {
+                offset -= step;
+                const firstSlide = track.querySelector('.card-carousel-slide');
+
+                if (!(firstSlide instanceof HTMLElement)) {
+                    return;
+                }
+
+                track.append(firstSlide);
+                step = slideStep();
+            }
+        };
+
+        const updateDepth = () => {
+            if (hasPriceBadges) {
+                Array.from(track.querySelectorAll('.card-carousel-slide')).forEach((slide) => {
+                    if (!(slide instanceof HTMLElement)) {
+                        return;
+                    }
+
+                    slide.style.opacity = '1';
+                    slide.style.zIndex = '';
+                    slide.style.transform = 'translate3d(0, 0, 0)';
+                });
+
+                return;
+            }
+
+            const carouselRect = carousel.getBoundingClientRect();
+            const center = carouselRect.left + carouselRect.width / 2;
+
+            Array.from(track.querySelectorAll('.card-carousel-slide')).forEach((slide) => {
+                if (!(slide instanceof HTMLElement)) {
+                    return;
+                }
+
+                const slideRect = slide.getBoundingClientRect();
+                const slideCenter = slideRect.left + slideRect.width / 2;
+                const distance = Math.min(Math.abs(slideCenter - center) / (carouselRect.width / 2), 1);
+                const scale = 1 - distance * 0.16;
+
+                slide.style.opacity = String(1 - distance * 0.34);
+                slide.style.zIndex = String(Math.round((1 - distance) * 10));
+                slide.style.transform = `translateZ(-${distance * 90}px) scale(${scale})`;
+            });
+        };
+
+        const move = (timestamp) => {
+            if (lastFrame === null) {
+                lastFrame = timestamp;
+            }
+
+            const elapsed = timestamp - lastFrame;
+            lastFrame = timestamp;
+
+            if (!isPaused) {
+                offset += elapsed * 0.035;
+                recyclePassedSlides();
+                const renderedOffset = Math.round(offset * pixelRatio) / pixelRatio;
+                track.style.setProperty('--carousel-offset', `-${renderedOffset}px`);
+            }
+
+            updateDepth();
+            window.requestAnimationFrame(move);
+        };
+
+        const pause = () => {
+            isPaused = true;
+        };
+
+        const resume = () => {
+            isPaused = false;
+            lastFrame = null;
+        };
+
+        carousel.addEventListener('mouseenter', pause);
+        carousel.addEventListener('mouseleave', resume);
+        carousel.addEventListener('focusin', pause);
+        carousel.addEventListener('focusout', resume);
+        window.addEventListener('resize', () => {
+            const step = slideStep();
+            offset = step > 0 ? offset % step : 0;
+            const renderedOffset = Math.round(offset * pixelRatio) / pixelRatio;
+            track.style.setProperty('--carousel-offset', `-${renderedOffset}px`);
+            updateDepth();
+        });
+
+        window.requestAnimationFrame(move);
+    });
 
     if (discussion && discussion.dataset.jsReady !== 'true') {
         discussion.dataset.jsReady = 'true';

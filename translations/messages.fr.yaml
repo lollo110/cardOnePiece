@@ -87,7 +87,15 @@ site:
 nav:
   home: Accueil
   collection: Collection
+  decks: Decks
   blog: Blog
+  menu: Menu
+
+notifications:
+  eyebrow: Compte
+  title: Notifications
+  empty: Aucune notification pour le moment.
+  reply: "%author% a repondu a votre commentaire sur %target%."
 
 locale:
   switch: Changer de langue
@@ -136,9 +144,19 @@ home:
   recent:
     title: Cartes récemment mises à jour
     link: Voir la collection
+  valuable:
+    title: Cartes les plus précieuses
   rooms:
     title: Salons de discussion
     link: Voir les discussions
+  top:
+    card_label: Carte la plus commentee
+    trading_label: Sujet trading le plus commente
+    game_label: Sujet jeu le plus commente
+    comments: "%count% commentaires"
+    empty_card: Aucun commentaire de carte pour le moment. Ouvrez une carte et lancez la premiere discussion.
+    empty_trading: Aucun sujet trading n'a encore de reponses.
+    empty_game: Aucun sujet jeu n'a encore de reponses.
 
 blog:
   section: Discussion
@@ -269,6 +287,12 @@ card:
     cardtrader: ID CardTrader
     tcgplayer: ID TCGplayer
     cardmarket: ID Cardmarket
+  prices:
+    heading: Prix Near Mint par langue
+    history_heading: Historique des prix
+    history_empty: Aucun historique de prix pour le moment. Lancez la synchronisation quotidienne pour ajouter le premier point.
+    listings: "(%count% annonces)"
+    empty: Aucun prix Near Mint par langue n'est disponible pour le moment.
   fields:
     name: Nom
     number: Numéro de carte
@@ -287,10 +311,66 @@ card:
       invalid_language: Langue invalide.
       invalid_parent: La reponse cible est introuvable.
 
+deck:
+  hero:
+    title: Decks de la communaute
+    description: Creez, partagez et parcourez des decklists One Piece Card Game avec les cartes de la collection du site.
+  new: Creer un deck
+  sign_in_to_create: Connectez-vous pour creer un deck
+  mine: Mes decks
+  public: Decks publics
+  empty: Aucun deck pour le moment.
+  open: Ouvrir le deck
+  title: Titre du deck
+  archetype: Archetype
+  archetype_empty: Decklist
+  description: Description
+  visibility: Visibilite
+  public_visibility: Public
+  private_visibility: Prive
+  decklist: Decklist
+  decklist_help: Collez une carte par ligne. Vous pouvez utiliser les quantites et les codes de cartes.
+  decklist_placeholder: "Leader:\n1 OP01-001\nMain:\n4 OP01-025\n4 Monkey.D.Luffy OP14-034\nDON:\n10 DON!!"
+  builder:
+    help: Recherchez les cartes, choisissez une quantite, puis ajoutez-les avec les images.
+    search: Rechercher une carte
+    search_placeholder: Rechercher par nom ou code
+    collection: Collection
+    all_collections: Toutes les collections
+    quantity: Quantite
+    section: Section
+    selected: Cartes selectionnees
+    empty: Aucune carte ajoutee pour le moment.
+    no_results: Aucune carte trouvee.
+    add: Ajouter
+    remove: Retirer
+  create: Enregistrer le deck
+  back: Retour aux decks
+  by: "Par %username%"
+  by_unknown: Deck communaute
+  cards: "%count% cartes"
+  cards_heading: Cartes du deck
+  section:
+    leader: Leader
+    main: Deck principal
+    don: DON!!
+    side: Side deck
+  notice:
+    created: Deck cree.
+    login_required: Connectez-vous pour creer un deck.
+    no_cards: Ajoutez au moins une carte qui existe dans la collection.
+    unmatched: "Certaines lignes n'ont pas pu etre reconnues : %lines%"
+
 footer:
   tagline: Une communauté indépendante autour des cartes One Piece pour parcourir les cartes, suivre les séries et partager des avis sur la collection et le jeu.
   explore: Explorer
   account: Compte
   legal: Légal
   contact: Contact
+  donation:
+    title: Soutenir le site
+    text: Aidez a garder Pirate Card Blog en ligne, ameliorer les outils et soutenir les nouvelles fonctionnalites communautaires.
+    button: Faire un don avec PayPal
+    configure: Me contacter pour soutenir
+    note: Les dons sont optionnels et aident a financer l'hebergement et le developpement.
   bottom: Projet de fans indépendant centré sur la discussion communautaire et la découverte des cartes.

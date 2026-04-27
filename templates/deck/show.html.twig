@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ deck.title }}{% endblock %}
+
+{% block body %}
+<a class="back-link" href="{{ path('decks') }}">{{ 'deck.back'|trans }}</a>
+
+<section class="detail-panel deck-show">
+    <p class="eyebrow">{{ deck.archetype ?: 'nav.decks'|trans }}</p>
+    <h1>{{ deck.title }}</h1>
+    <p class="deck-meta">
+        {% if deck.owner %}
+            {{ 'deck.by'|trans({'%username%': deck.owner.username}) }}
+        {% else %}
+            {{ 'deck.by_unknown'|trans }}
+        {% endif %}
+        · {{ deck.isPublic ? 'deck.public_visibility'|trans : 'deck.private_visibility'|trans }}
+    </p>
+    {% if deck.description %}
+        <p class="deck-description">{{ deck.description|nl2br }}</p>
+    {% endif %}
+</section>
+
+<section class="detail-panel deck-section">
+    <h2>{{ 'deck.cards_heading'|trans }}</h2>
+
+    {% for section, entries in sections %}
+        <div class="deck-list-section">
+            <h3>{{ ('deck.section.' ~ section)|trans }}</h3>
+            <div class="deck-entry-list">
+                {% for entry in entries %}
+                    {% set card = entry.card %}
+                    <article class="deck-entry">
+                        <strong class="deck-entry-quantity">{{ entry.quantity }}x</strong>
+                        {% if card.image %}
+                            <img src="{{ card.image }}" alt="{{ card.name }}">
+                        {% endif %}
+                        <div>
+                            <h4>
+                                <a href="{{ path('card_show', { id: card.apiId, name: card.nameNumbered ?: card.name }) }}">
+                                    {{ card.nameNumbered ?: card.name }}
+                                </a>
+                            </h4>
+                            <p class="deck-meta">
+                                {{ card.cardNumber ?: 'common.na'|trans }}
+                                {% if card.rarity %} · {{ card.rarity }}{% endif %}
+                                {% if card.episode %} · {{ card.episode.name }}{% endif %}
+                            </p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+</section>
+{% endblock %}

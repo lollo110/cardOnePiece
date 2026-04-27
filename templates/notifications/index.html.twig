@@ -1,0 +1,29 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'notifications.title'|trans }} - {{ 'site.name'|trans }}{% endblock %}
+
+{% block body %}
+<section class="detail-panel notification-panel">
+    <p class="eyebrow">{{ 'notifications.eyebrow'|trans }}</p>
+    <h1>{{ 'notifications.title'|trans }}</h1>
+
+    {% if notifications is empty %}
+        <p class="muted">{{ 'notifications.empty'|trans }}</p>
+    {% else %}
+        <div class="notification-list">
+            {% for notification in notifications %}
+                <a class="notification-item{% if not notification.read %} is-unread{% endif %}" href="{{ notification.targetUrl }}">
+                    <span class="notification-dot"></span>
+                    <span>
+                        {{ 'notifications.reply'|trans({
+                            '%author%': notification.actorName,
+                            '%target%': notification.targetTitle
+                        }) }}
+                    </span>
+                    <small>{{ notification.createdAt|date('Y-m-d H:i') }}</small>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

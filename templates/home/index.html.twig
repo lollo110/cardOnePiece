@@ -15,37 +15,117 @@
             <p class="eyebrow">{{ 'nav.collection'|trans }}</p>
             <h2>{{ 'home.recent.title'|trans }}</h2>
         </div>
-        <a href="{{ path('cards', { sort: 'recent' }) }}">{{ 'home.recent.link'|trans }}</a>
     </div>
 
-    <section class="card-grid" data-card-grid>
-        {% for card in recentCards %}
-            <article class="card-item" data-rarity="{{ card.rarity ?? '' }}">
-                {% if card.image is defined and card.image %}
-                    <img class="card-image" src="{{ card.image }}" alt="{{ card.name_numbered ?? card.name }}" loading="lazy">
-                {% endif %}
-
-                <div class="card-content">
-                    <h2>
-                        <a href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">
-                            {{ card.name_numbered ?? card.name }}
+    <div class="card-carousel" data-card-carousel>
+        <div class="card-carousel-viewport">
+            <section class="card-grid card-carousel-track" data-card-grid data-card-carousel-track>
+                {% for card in recentCards %}
+                    <article class="card-item card-carousel-slide" data-rarity="{{ card.rarity ?? '' }}">
+                        <a class="card-carousel-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}" aria-label="{{ 'card.view'|trans }} {{ card.name_numbered ?? card.name }}">
+                            {% if card.image is defined and card.image %}
+                                <img class="card-image" src="{{ card.image }}" alt="{{ card.name_numbered ?? card.name }}" loading="lazy">
+                            {% endif %}
                         </a>
-                    </h2>
+                    </article>
+                {% endfor %}
+            </section>
+        </div>
+    </div>
 
-                    {% if card.episode.name is defined %}
-                        <p>{{ card.episode.name }}</p>
+    <div class="section-heading home-subsection-heading">
+        <div>
+            <p class="eyebrow">{{ 'card.fields.average_near_mint'|trans }}</p>
+            <h2>{{ 'home.valuable.title'|trans }}</h2>
+        </div>
+    </div>
+
+    <div class="card-carousel card-carousel-valuable" data-card-carousel>
+        <div class="card-carousel-viewport">
+            <section class="card-grid card-carousel-track" data-card-grid data-card-carousel-track>
+                {% for card in valuableCards %}
+                    <article class="card-item card-carousel-slide" data-rarity="{{ card.rarity ?? '' }}">
+                        <a class="card-carousel-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}" aria-label="{{ 'card.view'|trans }} {{ card.name_numbered ?? card.name }}">
+                            {% if card.image is defined and card.image %}
+                                <img class="card-image" src="{{ card.image }}" alt="{{ card.name_numbered ?? card.name }}" loading="lazy">
+                            {% endif %}
+
+                            {% if card.average_near_mint_price is not null %}
+                                <span class="card-carousel-price">€{{ card.average_near_mint_price }}</span>
+                            {% endif %}
+                        </a>
+                    </article>
+                {% endfor %}
+            </section>
+        </div>
+    </div>
+
+    <div class="home-top-list">
+        <article class="detail-panel home-top-card">
+            <p class="eyebrow">{{ 'home.top.card_label'|trans }}</p>
+
+            {% if topCommentedCard %}
+                {% set card = topCommentedCard.card %}
+                {% set cardTitle = card.nameNumbered ?? card.name %}
+                <div class="home-top-card-layout">
+                    {% if card.image is defined and card.image %}
+                        <a href="{{ path('card_show', { id: card.apiId, name: cardTitle }) }}">
+                            <img class="home-top-card-image" src="{{ card.image }}" alt="{{ cardTitle }}" loading="lazy">
+                        </a>
                     {% endif %}
 
-                    <div class="card-tags">
-                        {% if card.rarity is defined and card.rarity %}<span>{{ card.rarity }}</span>{% endif %}
-                        {% if card.version is defined and card.version %}<span>{{ card.version }}</span>{% endif %}
-                    </div>
+                    <div>
+                        <h3>
+                            <a href="{{ path('card_show', { id: card.apiId, name: cardTitle }) }}">
+                                {{ cardTitle }}
+                            </a>
+                        </h3>
+                        <p>{{ 'home.top.comments'|trans({'%count%': topCommentedCard.commentCount}) }}</p>
 
-                    <a class="card-detail-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}">{{ 'card.view'|trans }}</a>
+                        {% if card.episode.name is defined %}
+                            <p class="muted">{{ card.episode.name }}</p>
+                        {% endif %}
+
+                        <a class="card-detail-link" href="{{ path('card_show', { id: card.apiId, name: cardTitle }) }}">{{ 'card.view'|trans }}</a>
+                    </div>
                 </div>
-            </article>
-        {% endfor %}
-    </section>
+            {% else %}
+                <p class="muted">{{ 'home.top.empty_card'|trans }}</p>
+            {% endif %}
+        </article>
+
+        <article class="detail-panel home-top-card">
+            <p class="eyebrow">{{ 'home.top.trading_label'|trans }}</p>
+
+            {% if topTradingThread %}
+                {% set thread = topTradingThread.thread %}
+                <h3>
+                    <a href="{{ path('blog_thread', { slug: thread.topic.slug, threadId: thread.id }) }}">{{ thread.title }}</a>
+                </h3>
+                <p>{{ 'home.top.comments'|trans({'%count%': topTradingThread.commentCount}) }}</p>
+                <p class="muted">{{ thread.content|striptags|slice(0, 180) }}{% if thread.content|length > 180 %}...{% endif %}</p>
+                <a class="card-detail-link" href="{{ path('blog_thread', { slug: thread.topic.slug, threadId: thread.id }) }}">{{ 'blog.thread.open'|trans }}</a>
+            {% else %}
+                <p class="muted">{{ 'home.top.empty_trading'|trans }}</p>
+            {% endif %}
+        </article>
+
+        <article class="detail-panel home-top-card">
+            <p class="eyebrow">{{ 'home.top.game_label'|trans }}</p>
+
+            {% if topGameThread %}
+                {% set thread = topGameThread.thread %}
+                <h3>
+                    <a href="{{ path('blog_thread', { slug: thread.topic.slug, threadId: thread.id }) }}">{{ thread.title }}</a>
+                </h3>
+                <p>{{ 'home.top.comments'|trans({'%count%': topGameThread.commentCount}) }}</p>
+                <p class="muted">{{ thread.content|striptags|slice(0, 180) }}{% if thread.content|length > 180 %}...{% endif %}</p>
+                <a class="card-detail-link" href="{{ path('blog_thread', { slug: thread.topic.slug, threadId: thread.id }) }}">{{ 'blog.thread.open'|trans }}</a>
+            {% else %}
+                <p class="muted">{{ 'home.top.empty_game'|trans }}</p>
+            {% endif %}
+        </article>
+    </div>
 </section>
 
 <section class="home-section">
@@ -54,7 +134,6 @@
             <p class="eyebrow">{{ 'blog.section'|trans }}</p>
             <h2>{{ 'home.rooms.title'|trans }}</h2>
         </div>
-        <a href="{{ path('blog') }}">{{ 'home.rooms.link'|trans }}</a>
     </div>
 
     <div class="topic-grid">
