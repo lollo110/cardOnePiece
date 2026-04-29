@@ -11,6 +11,13 @@ use App\Repository\CardRepository;
 
 class CardService
 {
+    private const PRICE_HISTORY_RANGES = [
+        '1m' => '-1 month',
+        '3m' => '-3 months',
+        '1y' => '-1 year',
+        'all' => null,
+    ];
+
     public function __construct(
         private readonly CardRepository $cardRepository,
         private readonly CardLanguagePriceRepository $cardLanguagePriceRepository,
@@ -108,6 +115,25 @@ class CardService
         return $card ? $this->cardToArray($card) : null;
     }
 
+    /**
+     * @return array{range: string, history: list<array{language_key: string, language_label: string, points: list<array<string, mixed>>}>}|null
+     */
+    public function priceHistoryForCard(int $id, string $range = 'all'): ?array
+    {
+        $card = $this->cardRepository->findApiIdWithRelations($id);
+
+        if (!$card) {
+            return null;
+        }
+
+        $normalizedRange = $this->normalizePriceHistoryRange($range);
+
+        return [
+            'range' => $normalizedRange,
+            'history' => $this->priceHistoryToArray($card, $normalizedRange),
+        ];
+    }
+
     private function normalizeSort(string $sort): string
     {
         return in_array($sort, ['relevance', 'recent', 'name_desc'], true) ? $sort : 'relevance';
@@ -172,11 +198,12 @@ class CardService
         ];
     }
 
-    private function priceHistoryToArray(Card $card): array
+    private function priceHistoryToArray(Card $card, string $range = 'all'): array
     {
         $history = [];
+        $since = $this->priceHistorySince($this->normalizePriceHistoryRange($range));
 
-        foreach ($this->cardPriceHistoryRepository->findRecentForCard($card) as $row) {
+        foreach ($this->cardPriceHistoryRepository->findForCardRange($card, $since) as $row) {
             $history[$row->getLanguageKey()] ??= [
                 'language_key' => $row->getLanguageKey(),
                 'language_label' => $row->getLanguageLabel(),
@@ -192,6 +219,22 @@ class CardService
         }
 
         return array_values($history);
+    }
+
+    private function normalizePriceHistoryRange(string $range): string
+    {
+        return array_key_exists($range, self::PRICE_HISTORY_RANGES) ? $range : 'all';
+    }
+
+    private function priceHistorySince(string $range): ?\DateTimeImmutable
+    {
+        $modifier = self::PRICE_HISTORY_RANGES[$range] ?? null;
+
+        if ($modifier === null) {
+            return null;
+        }
+
+        return (new \DateTimeImmutable('today'))->modify($modifier)->setTime(0, 0);
     }
 
 }

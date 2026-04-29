@@ -54,8 +54,7 @@ class DeckRepository extends ServiceEntityRepository
             ->leftJoin('c.episode', 'e')
             ->addSelect('e')
             ->andWhere('d.id = :id')
-            ->setParameter('id', $id)
-            ->setMaxResults(1);
+            ->setParameter('id', $id);
 
         if ($user === null) {
             $queryBuilder->andWhere('d.isPublic = true');

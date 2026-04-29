@@ -291,6 +291,11 @@ card:
     heading: Prix Near Mint par langue
     history_heading: Historique des prix
     history_empty: Aucun historique de prix pour le moment. Lancez la synchronisation quotidienne pour ajouter le premier point.
+    history_range_label: Periode de l'historique des prix
+    range_1m: 1 mois
+    range_3m: 3 mois
+    range_1y: 1 an
+    range_all: Tout
     listings: "(%count% annonces)"
     empty: Aucun prix Near Mint par langue n'est disponible pour le moment.
   fields:

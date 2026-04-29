@@ -160,7 +160,11 @@ const initializeStructure = () => {
         priceSwitcher.dataset.jsReady = 'true';
         const priceDisplays = Array.from(document.querySelectorAll('[data-card-price-display]'));
         const priceChart = document.querySelector('[data-card-price-chart]');
+        const rangeButtons = Array.from(document.querySelectorAll('[data-price-range-button]'));
         const emptyHistoryText = priceSwitcher.dataset.emptyHistory ?? priceChart?.dataset.emptyHistory ?? 'No price history yet.';
+        const historyUrl = priceSwitcher.dataset.priceHistoryUrl ?? '';
+        const pageLocale = document.documentElement.lang || undefined;
+        let activeRange = priceSwitcher.dataset.priceHistoryRange ?? 'all';
         let priceHistory = [];
 
         try {
@@ -169,13 +173,52 @@ const initializeStructure = () => {
             priceHistory = [];
         }
 
+        const formatCurrency = (price) => `\u20ac${Number(price).toFixed(2)}`;
+
+        const formatChartDate = (date, range) => {
+            const parsedDate = new Date(`${date}T00:00:00`);
+
+            if (Number.isNaN(parsedDate.getTime())) {
+                return date;
+            }
+
+            const options = range === 'all' || range === '1y'
+                ? { month: 'short', year: 'numeric' }
+                : { month: 'short', day: 'numeric' };
+
+            return new Intl.DateTimeFormat(pageLocale, options).format(parsedDate);
+        };
+
+        const setActiveRange = (range) => {
+            activeRange = range;
+            priceSwitcher.dataset.priceHistoryRange = range;
+            rangeButtons.forEach((button) => {
+                if (!(button instanceof HTMLButtonElement)) {
+                    return;
+                }
+
+                const isActive = button.dataset.range === range;
+                button.classList.toggle('is-active', isActive);
+                button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+        };
+
         const renderPriceChart = (languageKey) => {
             if (!(priceChart instanceof HTMLElement)) {
                 return;
             }
 
             const history = priceHistory.find((entry) => entry.language_key === languageKey);
-            const points = Array.isArray(history?.points) ? history.points : [];
+            const points = Array.isArray(history?.points)
+                ? history.points
+                    .map((point) => ({
+                        ...point,
+                        priceValue: Number(point.price),
+                        dateValue: new Date(`${point.date}T00:00:00`).getTime(),
+                    }))
+                    .filter((point) => Number.isFinite(point.priceValue) && Number.isFinite(point.dateValue))
+                    .sort((a, b) => a.dateValue - b.dateValue)
+                : [];
             priceChart.innerHTML = '';
 
             if (!points.length) {
@@ -187,31 +230,91 @@ const initializeStructure = () => {
             }
 
             const svgNamespace = 'http://www.w3.org/2000/svg';
-            const width = 720;
-            const height = 280;
-            const padding = 44;
-            const prices = points.map((point) => Number(point.price));
+            const width = 960;
+            const height = 420;
+            const plotLeft = 54;
+            const plotRight = 820;
+            const plotTop = 34;
+            const plotBottom = 342;
+            const plotWidth = plotRight - plotLeft;
+            const plotHeight = plotBottom - plotTop;
+            const prices = points.map((point) => point.priceValue);
             const minPrice = Math.min(...prices);
             const maxPrice = Math.max(...prices);
-            const priceRange = Math.max(maxPrice - minPrice, 1);
-            const xForIndex = (index) => points.length === 1
-                ? width / 2
-                : padding + (index / (points.length - 1)) * (width - padding * 2);
-            const yForPrice = (price) => height - padding - ((price - minPrice) / priceRange) * (height - padding * 2);
+            const minDate = Math.min(...points.map((point) => point.dateValue));
+            const maxDate = Math.max(...points.map((point) => point.dateValue));
+            const rawRange = maxPrice - minPrice;
+            const pricePadding = rawRange === 0 ? Math.max(maxPrice * 0.06, 1) : rawRange * 0.18;
+            const chartMin = Math.max(0, minPrice - pricePadding);
+            const chartMax = maxPrice + pricePadding;
+            const chartRange = Math.max(chartMax - chartMin, 1);
+            const dateRange = Math.max(maxDate - minDate, 1);
+            const xForPoint = (point) => points.length === 1
+                ? plotLeft + plotWidth / 2
+                : plotLeft + ((point.dateValue - minDate) / dateRange) * plotWidth;
+            const yForPrice = (price) => plotBottom - ((price - chartMin) / chartRange) * plotHeight;
             const pathData = points.map((point, index) => {
                 const command = index === 0 ? 'M' : 'L';
-                return `${command} ${xForIndex(index).toFixed(2)} ${yForPrice(Number(point.price)).toFixed(2)}`;
+                return `${command} ${xForPoint(point).toFixed(2)} ${yForPrice(point.priceValue).toFixed(2)}`;
             }).join(' ');
+            const lastPoint = points[points.length - 1];
+            const lastX = xForPoint(lastPoint);
+            const lastY = yForPrice(lastPoint.priceValue);
 
             const svg = document.createElementNS(svgNamespace, 'svg');
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
             svg.setAttribute('role', 'img');
             svg.setAttribute('aria-label', `${history.language_label} price history`);
 
+            const gridGroup = document.createElementNS(svgNamespace, 'g');
+            gridGroup.setAttribute('class', 'price-chart-grid');
+
+            for (let index = 0; index <= 4; index++) {
+                const ratio = index / 4;
+                const y = plotTop + ratio * plotHeight;
+                const price = chartMax - ratio * chartRange;
+                const line = document.createElementNS(svgNamespace, 'line');
+                line.setAttribute('x1', String(plotLeft));
+                line.setAttribute('x2', String(plotRight));
+                line.setAttribute('y1', y.toFixed(2));
+                line.setAttribute('y2', y.toFixed(2));
+                gridGroup.append(line);
+
+                const label = document.createElementNS(svgNamespace, 'text');
+                label.setAttribute('x', String(plotRight + 42));
+                label.setAttribute('y', String(y + 6));
+                label.setAttribute('class', 'price-chart-side-label');
+                label.textContent = formatCurrency(price);
+                gridGroup.append(label);
+            }
+
+            const verticalTicks = Math.min(6, Math.max(1, points.length - 1));
+
+            for (let index = 0; index <= verticalTicks; index++) {
+                const ratio = verticalTicks === 0 ? 0 : index / verticalTicks;
+                const x = plotLeft + ratio * plotWidth;
+                const line = document.createElementNS(svgNamespace, 'line');
+                line.setAttribute('x1', x.toFixed(2));
+                line.setAttribute('x2', x.toFixed(2));
+                line.setAttribute('y1', String(plotTop));
+                line.setAttribute('y2', String(plotBottom));
+                gridGroup.append(line);
+            }
+
+            svg.append(gridGroup);
+
             const axis = document.createElementNS(svgNamespace, 'path');
-            axis.setAttribute('d', `M ${padding} ${padding} V ${height - padding} H ${width - padding}`);
+            axis.setAttribute('d', `M ${plotLeft} ${plotTop} V ${plotBottom} H ${plotRight}`);
             axis.setAttribute('class', 'price-chart-axis');
             svg.append(axis);
+
+            const currentLine = document.createElementNS(svgNamespace, 'line');
+            currentLine.setAttribute('x1', String(plotLeft));
+            currentLine.setAttribute('x2', String(plotRight));
+            currentLine.setAttribute('y1', lastY.toFixed(2));
+            currentLine.setAttribute('y2', lastY.toFixed(2));
+            currentLine.setAttribute('class', 'price-chart-current-line');
+            svg.append(currentLine);
 
             const line = document.createElementNS(svgNamespace, 'path');
             line.setAttribute('d', pathData);
@@ -219,49 +322,91 @@ const initializeStructure = () => {
             line.setAttribute('pathLength', '1');
             svg.append(line);
 
-            points.forEach((point, index) => {
+            points.forEach((point) => {
                 const dot = document.createElementNS(svgNamespace, 'circle');
-                dot.setAttribute('cx', xForIndex(index).toFixed(2));
-                dot.setAttribute('cy', yForPrice(Number(point.price)).toFixed(2));
-                dot.setAttribute('r', '4');
+                dot.setAttribute('cx', xForPoint(point).toFixed(2));
+                dot.setAttribute('cy', yForPrice(point.priceValue).toFixed(2));
+                dot.setAttribute('r', points.length > 18 ? '2.2' : '3.4');
                 dot.setAttribute('class', 'price-chart-dot');
 
                 const title = document.createElementNS(svgNamespace, 'title');
-                title.textContent = `${point.date}: \u20ac${point.price}`;
+                title.textContent = `${point.date}: ${formatCurrency(point.priceValue)}`;
                 dot.append(title);
                 svg.append(dot);
             });
 
-            const minLabel = document.createElementNS(svgNamespace, 'text');
-            minLabel.setAttribute('x', String(padding));
-            minLabel.setAttribute('y', String(height - 12));
-            minLabel.setAttribute('class', 'price-chart-label');
-            minLabel.textContent = `\u20ac${minPrice.toFixed(2)}`;
-            svg.append(minLabel);
+            const currentBadge = document.createElementNS(svgNamespace, 'g');
+            currentBadge.setAttribute('class', 'price-chart-current-badge');
+            const badgeText = formatCurrency(lastPoint.priceValue);
+            const badgeWidth = Math.max(86, badgeText.length * 10 + 28);
+            const badgeHeight = 32;
+            const badge = document.createElementNS(svgNamespace, 'rect');
+            badge.setAttribute('x', String(plotRight + 28));
+            badge.setAttribute('y', String(Math.max(plotTop, Math.min(plotBottom - badgeHeight, lastY - badgeHeight / 2))));
+            badge.setAttribute('width', String(badgeWidth));
+            badge.setAttribute('height', String(badgeHeight));
+            badge.setAttribute('rx', '3');
+            currentBadge.append(badge);
 
-            const maxLabel = document.createElementNS(svgNamespace, 'text');
-            maxLabel.setAttribute('x', String(padding));
-            maxLabel.setAttribute('y', '24');
-            maxLabel.setAttribute('class', 'price-chart-label');
-            maxLabel.textContent = `\u20ac${maxPrice.toFixed(2)}`;
-            svg.append(maxLabel);
+            const badgeLabel = document.createElementNS(svgNamespace, 'text');
+            badgeLabel.setAttribute('x', String(plotRight + 44));
+            badgeLabel.setAttribute('y', String(Number(badge.getAttribute('y')) + 21));
+            badgeLabel.textContent = badgeText;
+            currentBadge.append(badgeLabel);
+            svg.append(currentBadge);
 
             const firstDate = document.createElementNS(svgNamespace, 'text');
-            firstDate.setAttribute('x', String(padding));
-            firstDate.setAttribute('y', String(height - 16));
+            firstDate.setAttribute('x', String(plotLeft));
+            firstDate.setAttribute('y', String(height - 30));
             firstDate.setAttribute('class', 'price-chart-date');
-            firstDate.textContent = points[0].date;
+            firstDate.textContent = formatChartDate(points[0].date, activeRange);
             svg.append(firstDate);
 
             const lastDate = document.createElementNS(svgNamespace, 'text');
-            lastDate.setAttribute('x', String(width - padding));
-            lastDate.setAttribute('y', String(height - 16));
+            lastDate.setAttribute('x', String(plotRight));
+            lastDate.setAttribute('y', String(height - 30));
             lastDate.setAttribute('text-anchor', 'end');
             lastDate.setAttribute('class', 'price-chart-date');
-            lastDate.textContent = points[points.length - 1].date;
+            lastDate.textContent = formatChartDate(lastPoint.date, activeRange);
             svg.append(lastDate);
 
             priceChart.append(svg);
+        };
+
+        const fetchPriceHistory = async (range) => {
+            if (!historyUrl) {
+                setActiveRange(range);
+                renderPriceChart(priceSwitcher.value);
+                return;
+            }
+
+            if (priceChart instanceof HTMLElement) {
+                priceChart.classList.add('is-loading');
+            }
+
+            try {
+                const url = new URL(historyUrl, window.location.origin);
+                url.searchParams.set('range', range);
+
+                const response = await fetch(url.toString(), {
+                    headers: { Accept: 'application/json' },
+                });
+                const payload = await response.json();
+
+                if (!response.ok || !Array.isArray(payload.history)) {
+                    return;
+                }
+
+                priceHistory = payload.history;
+                setActiveRange(typeof payload.range === 'string' ? payload.range : range);
+                renderPriceChart(priceSwitcher.value);
+            } catch (error) {
+                renderPriceChart(priceSwitcher.value);
+            } finally {
+                if (priceChart instanceof HTMLElement) {
+                    priceChart.classList.remove('is-loading');
+                }
+            }
         };
 
         const updateSelectedPrice = () => {
@@ -279,6 +424,13 @@ const initializeStructure = () => {
         };
 
         priceSwitcher.addEventListener('change', updateSelectedPrice);
+        rangeButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const range = button instanceof HTMLElement ? button.dataset.range ?? 'all' : 'all';
+                fetchPriceHistory(range);
+            });
+        });
+        setActiveRange(activeRange);
         updateSelectedPrice();
     }
 

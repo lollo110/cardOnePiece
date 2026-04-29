@@ -26,6 +26,28 @@ class CardPriceHistoryRepository extends ServiceEntityRepository
     /**
      * @return list<CardPriceHistory>
      */
+    public function findForCardRange(Card $card, ?\DateTimeImmutable $since = null): array
+    {
+        $queryBuilder = $this->createQueryBuilder('h')
+            ->andWhere('h.card = :card')
+            ->setParameter('card', $card)
+            ->orderBy('h.languageLabel', 'ASC')
+            ->addOrderBy('h.recordedOn', 'ASC');
+
+        if ($since !== null) {
+            $queryBuilder
+                ->andWhere('h.recordedOn >= :since')
+                ->setParameter('since', $since);
+        }
+
+        return $queryBuilder
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<CardPriceHistory>
+     */
     public function findRecentForCard(Card $card, int $limitPerLanguage = 90): array
     {
         $rows = $this->createQueryBuilder('h')

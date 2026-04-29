@@ -70,6 +70,8 @@
                             class="card-price-language-select"
                             data-card-price-switcher
                             data-card-price-history="{{ card.price_history|json_encode|e('html_attr') }}"
+                            data-price-history-url="{{ path('card_price_history', { id: card.id }) }}"
+                            data-price-history-range="all"
                             data-empty-history="{{ 'card.prices.history_empty'|trans }}"
                         >
                             {% for language in cardCommentOptions.languages %}
@@ -181,7 +183,15 @@
 </section>
 
 <section class="detail-panel price-history-panel">
-    <h2>{{ 'card.prices.history_heading'|trans }}</h2>
+    <div class="price-history-header">
+        <h2>{{ 'card.prices.history_heading'|trans }}</h2>
+        <div class="price-history-ranges" role="group" aria-label="{{ 'card.prices.history_range_label'|trans }}">
+            <button type="button" data-price-range-button data-range="1m">{{ 'card.prices.range_1m'|trans }}</button>
+            <button type="button" data-price-range-button data-range="3m">{{ 'card.prices.range_3m'|trans }}</button>
+            <button type="button" data-price-range-button data-range="1y">{{ 'card.prices.range_1y'|trans }}</button>
+            <button type="button" class="is-active" data-price-range-button data-range="all">{{ 'card.prices.range_all'|trans }}</button>
+        </div>
+    </div>
     <div
         class="price-history-chart"
         data-card-price-chart

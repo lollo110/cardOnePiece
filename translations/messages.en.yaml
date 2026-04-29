@@ -205,6 +205,11 @@ card:
     heading: Near Mint prices by language
     history_heading: Price history
     history_empty: No price history yet. Run the daily sync to add the first point.
+    history_range_label: Price history range
+    range_1m: 1 month
+    range_3m: 3 months
+    range_1y: 1 year
+    range_all: All
     listings: "(%count% listings)"
     empty: No language-specific Near Mint price is available yet.
   fields:

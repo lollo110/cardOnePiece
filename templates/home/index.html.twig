@@ -12,29 +12,6 @@
 <section class="home-section">
     <div class="section-heading">
         <div>
-            <p class="eyebrow">{{ 'nav.collection'|trans }}</p>
-            <h2>{{ 'home.recent.title'|trans }}</h2>
-        </div>
-    </div>
-
-    <div class="card-carousel" data-card-carousel>
-        <div class="card-carousel-viewport">
-            <section class="card-grid card-carousel-track" data-card-grid data-card-carousel-track>
-                {% for card in recentCards %}
-                    <article class="card-item card-carousel-slide" data-rarity="{{ card.rarity ?? '' }}">
-                        <a class="card-carousel-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}" aria-label="{{ 'card.view'|trans }} {{ card.name_numbered ?? card.name }}">
-                            {% if card.image is defined and card.image %}
-                                <img class="card-image" src="{{ card.image }}" alt="{{ card.name_numbered ?? card.name }}" loading="lazy">
-                            {% endif %}
-                        </a>
-                    </article>
-                {% endfor %}
-            </section>
-        </div>
-    </div>
-
-    <div class="section-heading home-subsection-heading">
-        <div>
             <p class="eyebrow">{{ 'card.fields.average_near_mint'|trans }}</p>
             <h2>{{ 'home.valuable.title'|trans }}</h2>
         </div>
@@ -51,7 +28,30 @@
                             {% endif %}
 
                             {% if card.average_near_mint_price is not null %}
-                                <span class="card-carousel-price">€{{ card.average_near_mint_price }}</span>
+                                <span class="card-carousel-price">&#8364;{{ card.average_near_mint_price }}</span>
+                            {% endif %}
+                        </a>
+                    </article>
+                {% endfor %}
+            </section>
+        </div>
+    </div>
+
+    <div class="section-heading home-subsection-heading">
+        <div>
+            <p class="eyebrow">{{ 'nav.collection'|trans }}</p>
+            <h2>{{ 'home.recent.title'|trans }}</h2>
+        </div>
+    </div>
+
+    <div class="card-carousel" data-card-carousel>
+        <div class="card-carousel-viewport">
+            <section class="card-grid card-carousel-track" data-card-grid data-card-carousel-track>
+                {% for card in recentCards %}
+                    <article class="card-item card-carousel-slide" data-rarity="{{ card.rarity ?? '' }}">
+                        <a class="card-carousel-link" href="{{ path('card_show', { id: card.id, name: card.name_numbered ?? card.name }) }}" aria-label="{{ 'card.view'|trans }} {{ card.name_numbered ?? card.name }}">
+                            {% if card.image is defined and card.image %}
+                                <img class="card-image" src="{{ card.image }}" alt="{{ card.name_numbered ?? card.name }}" loading="lazy">
                             {% endif %}
                         </a>
                     </article>
@@ -141,7 +141,7 @@
             <article class="detail-panel topic-card">
                 <h3>{{ topic.title }}</h3>
                 <p>{{ topic.description }}</p>
-                <a class="card-detail-link" href="{{ path('blog_topic', { slug: topic.slug }) }}">{{ topic.button }}</a>
+                <a class="card-detail-link" href="{{ path('blog_topic', { slug: topic.slug }) }}" data-turbo="false">{{ topic.button }}</a>
             </article>
         {% endfor %}
     </div>

@@ -11,8 +11,35 @@ class CommentModerationService
      */
     private const BLOCKED_TERMS = [
         'racism' => ['nigger', 'nigga', 'chink', 'gook', 'kike', 'spic', 'wetback'],
-        'profanity' => ['fuck', 'shit', 'bitch', 'asshole', 'motherfucker'],
-        'offensive language' => ['retard', 'whore', 'slut'],
+        'profanity' => [
+            'fuck',
+            'shit',
+            'bitch',
+            'asshole',
+            'motherfucker',
+            'merde',
+            'putain',
+            'bordel',
+            'connard',
+            'connasse',
+            'encule',
+            'enfoire',
+            'fils de pute',
+            'va te faire foutre',
+        ],
+        'offensive language' => [
+            'retard',
+            'whore',
+            'slut',
+            'con',
+            'conne',
+            'salope',
+            'ta gueule',
+            'ferme ta gueule',
+            'debile',
+            'cretin',
+            'abruti',
+        ],
     ];
 
     public function moderate(string $content): CommentModerationResult
@@ -37,11 +64,16 @@ class CommentModerationService
         return $normalized
             ->ascii()
             ->lower()
+            ->trim()
+            ->replaceMatches('/\s+/', ' ')
             ->toString();
     }
 
     private function wordPattern(string $term): string
     {
-        return '/(^|[^a-z0-9])' . preg_quote($term, '/') . '([^a-z0-9]|$)/';
+        $termPattern = preg_quote($term, '/');
+        $termPattern = str_replace('\ ', '\s+', $termPattern);
+
+        return '/(^|[^a-z0-9])' . $termPattern . '([^a-z0-9]|$)/';
     }
 }

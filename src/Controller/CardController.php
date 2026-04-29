@@ -289,6 +289,18 @@ class CardController extends AbstractController
         ]);
     }
 
+    #[Route('/cards/{id}/price-history', name: 'card_price_history', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function priceHistory(int $id, Request $request, CardService $service): JsonResponse
+    {
+        $payload = $service->priceHistoryForCard($id, (string) $request->query->get('range', 'all'));
+
+        if ($payload === null) {
+            return $this->json(['error' => 'Card not found.'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json($payload);
+    }
+
     #[Route('/cards/{id}/comments', name: 'card_comments', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function cardComments(
         int $id,
