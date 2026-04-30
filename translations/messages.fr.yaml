@@ -15,6 +15,10 @@ site:
       title: Projet indépendant
       paragraph_1: Pirate Card Blog est un projet de fans indépendant et n’est pas un site officiel de Bandai, Toei, Shueisha ou des éditeurs du One Piece Card Game.
       paragraph_2: Les noms de cartes, visuels et marques restent la propriété de leurs détenteurs respectifs.
+    section_4:
+      title: Donnees de cartes externes
+      paragraph_1: Les informations de cartes et de prix peuvent etre fournies par l'API CardTrader pour soutenir les pages de cartes, le deckbuilding et les graphiques d'historique de prix.
+      paragraph_2: Le site n'a pas pour objectif de redistribuer toute la base CardTrader ni de remplacer les services CardTrader.
   contact:
     title: Contact et modération
     intro: Les questions liées à la modération, aux commentaires publiés ou à l’accès au compte peuvent être traitées par l’équipe du site.
@@ -57,6 +61,10 @@ site:
       title: Vos droits
       paragraph_1: Les utilisateurs peuvent demander l’accès, la correction ou la suppression de leurs données personnelles, sous réserve des limites légales ou techniques liées à la sécurité du compte et à l’historique de modération.
       paragraph_2: Avant la mise en ligne, cette page devra indiquer le canal de contact utilisé pour traiter les demandes liées à la vie privée et à l’exercice des droits.
+    section_4:
+      title: Publicite et services externes
+      paragraph_1: Si des outils de publicite, d'analyse ou de mesure d'audience sont actives plus tard, la politique de confidentialite et la page cookies devront etre mises a jour avant leur activation.
+      paragraph_2: Toute publicite tierce doit rester clairement separee des actions du site et ne doit pas etre placee pour provoquer des clics accidentels.
   terms:
     title: Conditions d’utilisation
     intro: Ces conditions décrivent les principales règles d’utilisation de Pirate Card Blog et de participation à ses espaces communautaires.
@@ -72,6 +80,10 @@ site:
       title: Disponibilité du service
       paragraph_1: Le site est fourni en l’état et peut être modifié, suspendu ou mis à jour à tout moment.
       paragraph_2: L’accès peut être limité ou suspendu en cas d’abus, de maintenance ou de problème de sécurité.
+    section_4:
+      title: Donnees externes et prix
+      paragraph_1: Les donnees CardTrader sont des donnees externes utilisees pour soutenir les fonctions communautaires et de deckbuilding du site.
+      paragraph_2: Les prix sont indicatifs, peuvent etre depasses et ne doivent pas etre consideres comme des offres garanties ou des conseils financiers.
   cookies:
     title: Cookies
     intro: Cette page explique l’utilisation des cookies et technologies de stockage similaires sur Pirate Card Blog.
@@ -83,12 +95,21 @@ site:
       title: Outils supplémentaires
       paragraph_1: Un stockage technique temporaire peut également être utilisé pour garder certaines parties de l’interface fluides pendant la navigation.
       paragraph_2: Si des outils d’analyse, de publicité ou d’audience tiers sont ajoutés plus tard, cette page devra être mise à jour avant leur activation.
+    section_3:
+      title: Espaces publicitaires futurs
+      paragraph_1: Le site peut reserver des espaces pour une publicite future, mais aucun bloc ne doit imiter un bouton, un formulaire ou une action importante du site.
+      paragraph_2: Si un reseau publicitaire est ajoute, cette page devra expliquer les cookies ou technologies utilises par ce service.
+
+ads:
+  label: Publicite
+  placeholder: Espace reserve pour de futures publicites. Aucune publicite payante n'est actuellement chargee ici.
 
 nav:
   home: Accueil
   collection: Collection
   decks: Decks
   blog: Blog
+  admin: Admin
   menu: Menu
 
 notifications:
@@ -136,6 +157,37 @@ common:
   na: N/D
   yes: Oui
   no: Non
+
+admin:
+  eyebrow: Admin
+  back: Retour a l'admin
+  quick_actions: Actions rapides
+  dashboard:
+    title: Tableau de bord admin
+    description: Surveillez le site, consultez les totaux importants et gerez les acces de la communaute.
+  stats:
+    cards: Cartes
+    decks: Decks
+    users: Utilisateurs
+    blocked: Elements bloques
+  users:
+    title: Gestion des utilisateurs
+    description: Donnez le role admin aux comptes de confiance ou retirez cet acces si besoin.
+    username: Nom d'utilisateur
+    email: E-mail
+    roles: Role
+    created: Creation
+    action: Action
+    admin: Admin
+    member: Membre
+    make_admin: Rendre admin
+    remove_admin: Retirer admin
+    empty: Aucun utilisateur trouve.
+  notice:
+    csrf: Le jeton de securite a expire. Veuillez reessayer.
+    self_demote: Vous ne pouvez pas retirer votre propre acces admin.
+    admin_added: "%username% est maintenant admin."
+    admin_removed: "%username% n'est plus admin."
 
 home:
   hero:
@@ -372,6 +424,9 @@ footer:
   account: Compte
   legal: Légal
   contact: Contact
+  source:
+    data: "Prices and card data provided by CardTrader API."
+    disclaimer: "Prices are indicative and may change over time."
   donation:
     title: Soutenir le site
     text: Aidez a garder Pirate Card Blog en ligne, ameliorer les outils et soutenir les nouvelles fonctionnalites communautaires.

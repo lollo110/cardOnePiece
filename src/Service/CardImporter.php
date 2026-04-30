@@ -73,6 +73,77 @@ class CardImporter
         ];
     }
 
+    public function refreshTrackedPrices(int $limit = 250, int $flushEvery = 25, ?callable $onCardRefreshed = null): array
+    {
+        $this->reset();
+        $cards = $this->entityManager->getRepository(Card::class)->findTrackedForPriceRefresh($limit);
+        $flushEvery = max(1, $flushEvery);
+        $checked = 0;
+        $refreshed = 0;
+        $failed = 0;
+
+        foreach ($cards as $card) {
+            $checked++;
+
+            try {
+                if ($this->refreshCardPrice($card, true, false)) {
+                    $refreshed++;
+                }
+            } catch (\RuntimeException) {
+                $failed++;
+            }
+
+            $onCardRefreshed?->__invoke($checked, count($cards), $card->getNameNumbered() ?: $card->getName());
+
+            if ($checked % $flushEvery === 0) {
+                $this->entityManager->flush();
+            }
+        }
+
+        $this->entityManager->flush();
+
+        return [
+            'seen' => $checked,
+            'refreshed' => $refreshed,
+            'failed' => $failed,
+            'prices_updated' => $this->pricesUpdated,
+        ];
+    }
+
+    public function refreshCardPrice(Card $card, bool $force = false, bool $flush = true): bool
+    {
+        if (!$force && !$this->isPriceCacheStale($card)) {
+            return false;
+        }
+
+        // CardTrader data is external data. The local database keeps a cache
+        // and price history for site features; it is not a redistribution of
+        // the full API dataset, and prices are only indicative snapshots.
+        $nearMintPriceData = $this->catalogService->nearMintAveragePriceDataForBlueprint($card->getApiId());
+        $priceUpdatedAt = new \DateTimeImmutable();
+
+        $card
+            ->setAverageNearMintPriceCents($nearMintPriceData['overall'])
+            ->setPriceUpdatedAt($priceUpdatedAt)
+            ->setUpdatedAt($priceUpdatedAt);
+
+        $this->syncLanguagePrices($card, $nearMintPriceData['languages'], $priceUpdatedAt);
+        $this->entityManager->persist($card);
+
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+
+        return true;
+    }
+
+    private function isPriceCacheStale(Card $card): bool
+    {
+        $updatedAt = $card->getPriceUpdatedAt();
+
+        return $updatedAt === null || $updatedAt < (new \DateTimeImmutable('-24 hours'));
+    }
+
     private function reset(): void
     {
         $this->cardCache = [];

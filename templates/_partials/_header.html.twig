@@ -30,6 +30,9 @@
             <a href="{{ path('cards') }}">{{ 'nav.collection'|trans }}</a>
             <a href="{{ path('decks') }}">{{ 'nav.decks'|trans }}</a>
             <a href="{{ path('blog') }}">{{ 'nav.blog'|trans }}</a>
+            {% if is_granted('ROLE_ADMIN') %}
+                <a href="{{ path('admin_dashboard') }}">{{ 'nav.admin'|trans }}</a>
+            {% endif %}
         </nav>
 
         <div class="site-locale" aria-label="{{ 'locale.switch'|trans }}">

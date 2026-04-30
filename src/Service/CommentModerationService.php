@@ -10,22 +10,50 @@ class CommentModerationService
      * @var array<string, list<string>>
      */
     private const BLOCKED_TERMS = [
-        'racism' => ['nigger', 'nigga', 'chink', 'gook', 'kike', 'spic', 'wetback'],
+        'racism' => [
+            'nigger',
+            'nigga',
+            'chink',
+            'gook',
+            'kike',
+            'spic',
+            'wetback',
+            'coon',
+            'bougnoule',
+            'youpin',
+            'chinetoque',
+            'bicot',
+        ],
         'profanity' => [
             'fuck',
+            'fucking',
+            'fucked',
             'shit',
+            'bullshit',
             'bitch',
+            'bastard',
             'asshole',
+            'cunt',
+            'dickhead',
             'motherfucker',
+            'piss off',
             'merde',
             'putain',
+            'pute',
+            'fdp',
             'bordel',
             'connard',
             'connasse',
             'encule',
+            'enculer',
             'enfoire',
+            'enflure',
+            'batard',
             'fils de pute',
+            'sale pute',
             'va te faire foutre',
+            'nique ta mere',
+            'ntm',
         ],
         'offensive language' => [
             'retard',
@@ -36,9 +64,12 @@ class CommentModerationService
             'salope',
             'ta gueule',
             'ferme ta gueule',
+            'tg',
+            'ftg',
             'debile',
             'cretin',
             'abruti',
+            'trou du cul',
         ],
     ];
 
@@ -65,6 +96,7 @@ class CommentModerationService
             ->ascii()
             ->lower()
             ->trim()
+            ->replaceMatches('/[^a-z0-9]+/', ' ')
             ->replaceMatches('/\s+/', ' ')
             ->toString();
     }

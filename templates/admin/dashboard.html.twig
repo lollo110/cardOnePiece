@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'admin.dashboard.title'|trans }}{% endblock %}
+
+{% block body %}
+<section class="home-hero">
+    <p class="eyebrow">{{ 'admin.eyebrow'|trans }}</p>
+    <h1>{{ 'admin.dashboard.title'|trans }}</h1>
+    <p>{{ 'admin.dashboard.description'|trans }}</p>
+</section>
+
+<section class="admin-grid">
+    <article class="detail-panel admin-stat-card">
+        <span>{{ stats.cards }}</span>
+        <p>{{ 'admin.stats.cards'|trans }}</p>
+    </article>
+
+    <article class="detail-panel admin-stat-card">
+        <span>{{ stats.decks }}</span>
+        <p>{{ 'admin.stats.decks'|trans }}</p>
+    </article>
+
+    <article class="detail-panel admin-stat-card">
+        <span>{{ stats.users }}</span>
+        <p>{{ 'admin.stats.users'|trans }}</p>
+    </article>
+
+    <article class="detail-panel admin-stat-card">
+        <span>{{ stats.blockedComments }}</span>
+        <p>{{ 'admin.stats.blocked'|trans }}</p>
+    </article>
+</section>
+
+<section class="detail-panel admin-actions-panel">
+    <h2>{{ 'admin.quick_actions'|trans }}</h2>
+    <div class="admin-action-list">
+        <a class="card-detail-link" href="{{ path('admin_users') }}">{{ 'admin.users.title'|trans }}</a>
+        <a class="card-detail-link" href="{{ path('decks') }}">{{ 'nav.decks'|trans }}</a>
+        <a class="card-detail-link" href="{{ path('cards') }}">{{ 'nav.collection'|trans }}</a>
+        <a class="card-detail-link" href="{{ path('blog') }}">{{ 'nav.blog'|trans }}</a>
+    </div>
+</section>
+{% endblock %}

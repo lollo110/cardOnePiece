@@ -3,6 +3,7 @@ nav:
   collection: Collection
   decks: Decks
   blog: Blog
+  admin: Admin
   menu: Menu
 
 notifications:
@@ -50,6 +51,37 @@ common:
   na: N/A
   yes: Yes
   no: No
+
+admin:
+  eyebrow: Admin
+  back: Back to admin
+  quick_actions: Quick actions
+  dashboard:
+    title: Admin dashboard
+    description: Monitor the site, review key totals, and manage community access.
+  stats:
+    cards: Cards
+    decks: Decks
+    users: Users
+    blocked: Blocked items
+  users:
+    title: User management
+    description: Promote trusted accounts to admin or remove admin access when needed.
+    username: Username
+    email: Email
+    roles: Role
+    created: Created
+    action: Action
+    admin: Admin
+    member: Member
+    make_admin: Make admin
+    remove_admin: Remove admin
+    empty: No users found.
+  notice:
+    csrf: Security token expired. Please try again.
+    self_demote: You cannot remove your own admin access.
+    admin_added: "%username% is now an admin."
+    admin_removed: "%username% is no longer an admin."
 
 home:
   hero:
@@ -286,6 +318,9 @@ footer:
   account: Account
   legal: Legal
   contact: Contact
+  source:
+    data: "Prices and card data provided by CardTrader API."
+    disclaimer: "Prices are indicative and may change over time."
   donation:
     title: Support the site
     text: Help keep Pirate Card Blog online, improve the tools, and support new community features.
@@ -311,6 +346,10 @@ site:
       title: Independent project
       paragraph_1: Pirate Card Blog is an independent fan project and is not an official website of Bandai, Toei, Shueisha, or One Piece Card Game publishers.
       paragraph_2: Card names, artwork, and trademarks remain the property of their respective owners.
+    section_4:
+      title: External card data
+      paragraph_1: Card and price information may be provided by the CardTrader API to support community features such as card pages, deck building, and price history graphs.
+      paragraph_2: The site is not intended to redistribute the full CardTrader database or replace CardTrader services.
   contact:
     title: Contact and moderation
     intro: Questions about moderation, published comments, or account access can be handled through the site team.
@@ -353,6 +392,10 @@ site:
       title: Your rights
       paragraph_1: Users may request access, correction, or deletion of their personal data, subject to legal or technical limits linked to account security and moderation history.
       paragraph_2: Before launch, this page should include the contact channel used to handle privacy requests and exercise data protection rights.
+    section_4:
+      title: Advertising and external services
+      paragraph_1: If advertising, analytics, or audience measurement tools are activated later, the privacy policy and cookie information should be updated before launch.
+      paragraph_2: Any third-party advertising service should be clearly separated from site actions and should not be placed in a way that encourages accidental clicks.
   terms:
     title: Terms of use
     intro: These terms describe the main rules for using Pirate Card Blog and participating in its community spaces.
@@ -368,6 +411,10 @@ site:
       title: Service availability
       paragraph_1: The site is provided as available and may be changed, paused, or updated at any time.
       paragraph_2: Access may be limited or suspended in the event of abuse, maintenance, or security issues.
+    section_4:
+      title: External data and prices
+      paragraph_1: CardTrader data is external data used to support the site's own community and deck-building features.
+      paragraph_2: Prices are indicative, may be outdated, and should not be treated as guaranteed offers or financial advice.
   cookies:
     title: Cookies
     intro: This page explains the use of cookies and similar storage technologies on Pirate Card Blog.
@@ -379,3 +426,7 @@ site:
       title: Additional tools
       paragraph_1: Temporary technical storage may also be used to keep parts of the interface working smoothly during navigation.
       paragraph_2: If analytics, advertising, or third-party audience tools are added later, this page should be updated before those tools are enabled.
+
+ads:
+  label: Advertisement
+  placeholder: Reserved space for future ads. No paid advertisement is currently loaded here.

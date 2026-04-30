@@ -22,6 +22,7 @@ class CardService
         private readonly CardRepository $cardRepository,
         private readonly CardLanguagePriceRepository $cardLanguagePriceRepository,
         private readonly CardPriceHistoryRepository $cardPriceHistoryRepository,
+        private readonly CardImporter $cardImporter,
     ) {
     }
 
@@ -111,6 +112,15 @@ class CardService
     public function findCard(int $id, ?string $searchHint = null): ?array
     {
         $card = $this->cardRepository->findApiIdWithRelations($id);
+
+        if ($card) {
+            try {
+                $this->cardImporter->refreshCardPrice($card);
+            } catch (\RuntimeException) {
+                // Keep the page fast and available when CardTrader is down;
+                // cached local data remains the source for site rendering.
+            }
+        }
 
         return $card ? $this->cardToArray($card) : null;
     }

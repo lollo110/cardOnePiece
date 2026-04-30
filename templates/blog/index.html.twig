@@ -9,6 +9,8 @@
     <p>{{ 'blog.hero.description'|trans }}</p>
 </section>
 
+{% include '_partials/_ad_slot.html.twig' %}
+
 <section class="topic-grid">
     {% for topic in topics %}
         <div class="detail-panel topic-card">

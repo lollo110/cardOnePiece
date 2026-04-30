@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'app:cards:sync-daily', description: 'Sync One Piece cards from CardTrader at most once per day.')]
+#[AsCommand(name: 'app:cards:sync-daily', description: 'Refresh tracked CardTrader prices at most once per day.')]
 class SyncDailyCardsCommand extends Command
 {
     private const SYNC_NAME = 'daily_cards';
@@ -28,8 +28,10 @@ class SyncDailyCardsCommand extends Command
     {
         $this
             ->addOption('force', null, InputOption::VALUE_NONE, 'Run the sync even if it already ran today')
-            ->addOption('pages', null, InputOption::VALUE_REQUIRED, 'Limit number of CardTrader expansions to sync')
-            ->addOption('flush-every', null, InputOption::VALUE_REQUIRED, 'Flush every N cards', 100);
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit tracked cards to refresh', 250)
+            ->addOption('refresh-catalog', null, InputOption::VALUE_NONE, 'Explicitly refresh the local catalog cache from CardTrader')
+            ->addOption('pages', null, InputOption::VALUE_REQUIRED, 'When --refresh-catalog is used, limit number of CardTrader expansions to sync')
+            ->addOption('flush-every', null, InputOption::VALUE_REQUIRED, 'Flush every N cards', 25);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -44,24 +46,44 @@ class SyncDailyCardsCommand extends Command
             return Command::SUCCESS;
         }
 
-        $stats = $this->cardImporter->import(
-            $input->getOption('pages') ? (int) $input->getOption('pages') : null,
-            max(1, (int) $input->getOption('flush-every')),
-            static fn (int $page, int $totalPages, string $label) => $io->writeln(sprintf('Synced expansion %d/%d: %s', $page, $totalPages, $label))
-        );
+        if ($input->getOption('refresh-catalog')) {
+            // This explicit mode refreshes the local cache from external CardTrader
+            // data. The default daily path below avoids mirroring the full catalog.
+            $stats = $this->cardImporter->import(
+                $input->getOption('pages') ? (int) $input->getOption('pages') : null,
+                max(1, (int) $input->getOption('flush-every')),
+                static fn (int $page, int $totalPages, string $label) => $io->writeln(sprintf('Synced expansion %d/%d: %s', $page, $totalPages, $label))
+            );
+        } else {
+            $stats = $this->cardImporter->refreshTrackedPrices(
+                max(1, (int) $input->getOption('limit')),
+                max(1, (int) $input->getOption('flush-every')),
+                static fn (int $current, int $total, string $label) => $io->writeln(sprintf('Refreshed tracked card %d/%d: %s', $current, $total, $label))
+            );
+        }
 
         $state = $this->entityManager->find(CardSyncState::class, self::SYNC_NAME) ?? new CardSyncState(self::SYNC_NAME);
         $state->setLastRunAt($now);
         $this->entityManager->persist($state);
         $this->entityManager->flush();
 
-        $io->success(sprintf(
-            'Daily card sync finished: %d cards checked, %d new, %d updated, %d prices refreshed.',
-            $stats['seen'],
-            $stats['created'],
-            $stats['updated'],
-            $stats['prices_updated'] ?? 0,
-        ));
+        if ($input->getOption('refresh-catalog')) {
+            $io->success(sprintf(
+                'Catalog cache sync finished: %d cards checked, %d new, %d updated, %d prices refreshed.',
+                $stats['seen'],
+                $stats['created'],
+                $stats['updated'],
+                $stats['prices_updated'] ?? 0,
+            ));
+        } else {
+            $io->success(sprintf(
+                'Daily tracked price sync finished: %d cards checked, %d refreshed, %d failed, %d price rows updated.',
+                $stats['seen'],
+                $stats['refreshed'],
+                $stats['failed'],
+                $stats['prices_updated'] ?? 0,
+            ));
+        }
 
         return Command::SUCCESS;
     }

@@ -7,6 +7,7 @@ use App\Entity\BlogThread;
 use App\Entity\BlogTopic;
 use App\Entity\Card;
 use App\Entity\CardComment;
+use App\Entity\CardLanguagePrice;
 use App\Entity\User;
 use App\Repository\BlogCommentRepository;
 use App\Repository\BlogThreadRepository;
@@ -269,7 +270,7 @@ class CardController extends AbstractController
 
         $cardEntity = $entityManager->getRepository(\App\Entity\Card::class)->findOneBy(['apiId' => $id]);
         $commentLanguages = $cardEntity
-            ? $this->cardCommentLanguagesFromEntity($cardEntity)
+            ? $this->cardCommentLanguagesFromEntity($cardEntity, $entityManager, $card)
             : $this->cardCommentLanguages($card);
         $defaultLanguage = $commentLanguages[0]['key'] ?? 'english';
 
@@ -317,7 +318,7 @@ class CardController extends AbstractController
             return $this->json(['error' => $this->translator->trans('card.comments.error.not_found')], Response::HTTP_NOT_FOUND);
         }
 
-        $languageMap = $this->cardCommentLanguageMapFromEntity($cardEntity);
+        $languageMap = $this->cardCommentLanguageMapFromEntity($cardEntity, $entityManager);
         $discussionTypes = $this->cardDiscussionTypes();
 
         if ($request->isMethod('POST')) {
@@ -801,9 +802,9 @@ class CardController extends AbstractController
         return $this->languageOptionsFromLabels($labels);
     }
 
-    private function cardCommentLanguagesFromEntity(Card $card): array
+    private function cardCommentLanguagesFromEntity(Card $card, EntityManagerInterface $entityManager, ?array $cardView = null): array
     {
-        $map = $this->cardCommentLanguageMapFromEntity($card);
+        $map = $this->cardCommentLanguageMapFromEntity($card, $entityManager, $cardView);
         $options = [];
 
         foreach ($map as $key => $label) {
@@ -820,9 +821,23 @@ class CardController extends AbstractController
         return $options;
     }
 
-    private function cardCommentLanguageMapFromEntity(Card $card): array
+    private function cardCommentLanguageMapFromEntity(Card $card, EntityManagerInterface $entityManager, ?array $cardView = null): array
     {
         $labels = $this->normalizeLanguageLabels(($card->getRawData() ?? [])['languages'] ?? []);
+
+        foreach (($cardView['language_prices'] ?? []) as $price) {
+            if (is_array($price) && isset($price['language_label'])) {
+                $labels[] = trim((string) $price['language_label']);
+            }
+        }
+
+        foreach ($entityManager->getRepository(CardLanguagePrice::class)->findForCard($card) as $price) {
+            if ($price instanceof CardLanguagePrice) {
+                $labels[] = $price->getLanguageLabel();
+            }
+        }
+
+        $labels = $this->normalizeLanguageLabels($labels);
 
         if ($labels === []) {
             $labels = ['English'];

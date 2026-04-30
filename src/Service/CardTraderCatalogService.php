@@ -145,6 +145,8 @@ class CardTraderCatalogService
             return ['overall' => null, 'languages' => []];
         }
 
+        // Marketplace prices are fetched from CardTrader only to support local
+        // price widgets/history. They are indicative snapshots and may be stale.
         $this->waitForMarketplaceRateLimit();
         $data = $this->requestData('/marketplace/products', ['blueprint_id' => $blueprintId], true);
         $products = $this->productsFromMarketplaceResponse($data, $blueprintId);

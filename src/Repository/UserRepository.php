@@ -45,4 +45,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * @return list<User>
+     */
+    public function findForAdmin(int $limit = 100): array
+    {
+        return $this->createQueryBuilder('u')
+            ->orderBy('u.createdAt', 'DESC')
+            ->addOrderBy('u.username', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }

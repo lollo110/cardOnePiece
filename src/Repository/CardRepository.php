@@ -3,6 +3,8 @@
 namespace App\Repository;
 
 use App\Entity\Card;
+use App\Entity\CardComment;
+use App\Entity\DeckCard;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -148,6 +150,30 @@ class CardRepository extends ServiceEntityRepository
             ->orderBy('c.averageNearMintPriceCents', 'DESC')
             ->addOrderBy('c.name', 'ASC')
             ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Cards returned here are the local cache entries that power site features:
+     * deck cards, commented cards, and cards already shown with cached prices.
+     * This keeps scheduled price refreshes focused on community usage instead
+     * of redistributing the full CardTrader catalog.
+     *
+     * @return list<Card>
+     */
+    public function findTrackedForPriceRefresh(int $limit = 250): array
+    {
+        return $this->createQueryBuilder('c')
+            ->select('DISTINCT c')
+            ->leftJoin(DeckCard::class, 'dc', 'WITH', 'dc.card = c')
+            ->leftJoin(CardComment::class, 'cc', 'WITH', 'cc.card = c')
+            ->leftJoin('c.episode', 'e')
+            ->addSelect('e')
+            ->andWhere('dc.id IS NOT NULL OR cc.id IS NOT NULL OR c.averageNearMintPriceCents IS NOT NULL')
+            ->orderBy('c.priceUpdatedAt', 'ASC')
+            ->addOrderBy('c.updatedAt', 'DESC')
+            ->setMaxResults(max(1, min(1000, $limit)))
             ->getQuery()
             ->getResult();
     }

@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'app:cards:import', description: 'Import One Piece cards from CardTrader into the database.')]
+#[AsCommand(name: 'app:cards:import', description: 'Manually refresh the local CardTrader card cache.')]
 class ImportCardsCommand extends Command
 {
     public function __construct(
@@ -32,6 +32,9 @@ class ImportCardsCommand extends Command
         $pageLimit = $input->getOption('pages') ? (int) $input->getOption('pages') : null;
         $flushEvery = max(1, (int) $input->getOption('flush-every'));
 
+        // CardTrader data is external. This command is an explicit cache
+        // maintenance tool, not the default daily job and not a redistribution
+        // pipeline for the full upstream dataset.
         $stats = $this->cardImporter->import(
             $pageLimit,
             $flushEvery,

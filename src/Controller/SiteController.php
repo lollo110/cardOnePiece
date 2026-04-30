@@ -34,6 +34,10 @@ class SiteController extends AbstractController
                     'title' => 'site.about.section_3.title',
                     'content' => ['site.about.section_3.paragraph_1', 'site.about.section_3.paragraph_2'],
                 ],
+                [
+                    'title' => 'site.about.section_4.title',
+                    'content' => ['site.about.section_4.paragraph_1', 'site.about.section_4.paragraph_2'],
+                ],
             ],
         );
     }
@@ -99,6 +103,10 @@ class SiteController extends AbstractController
                     'title' => 'site.privacy.section_3.title',
                     'content' => ['site.privacy.section_3.paragraph_1', 'site.privacy.section_3.paragraph_2'],
                 ],
+                [
+                    'title' => 'site.privacy.section_4.title',
+                    'content' => ['site.privacy.section_4.paragraph_1', 'site.privacy.section_4.paragraph_2'],
+                ],
             ],
         );
     }
@@ -122,6 +130,10 @@ class SiteController extends AbstractController
                     'title' => 'site.terms.section_3.title',
                     'content' => ['site.terms.section_3.paragraph_1', 'site.terms.section_3.paragraph_2'],
                 ],
+                [
+                    'title' => 'site.terms.section_4.title',
+                    'content' => ['site.terms.section_4.paragraph_1', 'site.terms.section_4.paragraph_2'],
+                ],
             ],
         );
     }
@@ -140,6 +152,10 @@ class SiteController extends AbstractController
                 [
                     'title' => 'site.cookies.section_2.title',
                     'content' => ['site.cookies.section_2.paragraph_1', 'site.cookies.section_2.paragraph_2'],
+                ],
+                [
+                    'title' => 'site.cookies.section_3.title',
+                    'content' => ['site.cookies.section_3.paragraph_1', 'site.cookies.section_3.paragraph_2'],
                 ],
             ],
         );
