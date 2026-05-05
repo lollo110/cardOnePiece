@@ -429,7 +429,6 @@ footer:
     disclaimer: "Prices are indicative and may change over time."
   donation:
     title: Soutenir le site
-    text: Aidez a garder Pirate Card Blog en ligne, ameliorer les outils et soutenir les nouvelles fonctionnalites communautaires.
     button: Faire un don avec PayPal
     configure: Me contacter pour soutenir
     note: Les dons sont optionnels et aident a financer l'hebergement et le developpement.

@@ -389,6 +389,8 @@ body {
     align-items: center;
     justify-content: center;
     width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
     padding: 10px 14px;
     border: 1px solid var(--color-teal);
     border-radius: 8px;
@@ -1022,16 +1024,19 @@ button:active,
     border: 0;
     background: transparent;
     box-shadow: none;
+    cursor: pointer;
     transform: translateZ(-18px) scale(0.94);
     backface-visibility: hidden;
     will-change: transform, opacity;
 }
 
-.card-carousel-valuable .card-carousel-track {
+.card-carousel-valuable .card-carousel-track,
+.card-carousel-recent .card-carousel-track {
     transform-style: flat;
 }
 
-.card-carousel-valuable .card-carousel-slide {
+.card-carousel-valuable .card-carousel-slide,
+.card-carousel-recent .card-carousel-slide {
     opacity: 1 !important;
     transform: translate3d(0, 0, 0) !important;
     will-change: auto;
@@ -1276,6 +1281,22 @@ button:active,
 
 .comments-panel {
     margin-top: 24px;
+}
+
+.route-card-show .comments-panel {
+    overflow: visible;
+    border: 1px solid var(--color-line-cool);
+    border-radius: 0;
+    background-color: var(--color-surface-strong);
+    background-image: none;
+    box-shadow: var(--shadow-soft);
+    -webkit-mask: none;
+    mask: none;
+}
+
+.route-card-show .comments-panel::before,
+.route-card-show .comments-panel::after {
+    display: none;
 }
 
 .discussion-shell {
@@ -1567,6 +1588,55 @@ button:active,
     gap: 20px;
 }
 
+.route-blog .home-hero,
+.route-blog-topic .home-hero,
+.route-blog-thread .home-hero,
+.route-blog .detail-panel,
+.route-blog-topic .detail-panel,
+.route-blog-thread .detail-panel,
+.route-blog .detail-summary,
+.route-blog-topic .detail-summary,
+.route-blog-thread .detail-summary,
+.route-blog .info-page-header,
+.route-blog-topic .info-page-header,
+.route-blog-thread .info-page-header {
+    overflow: visible;
+    border: 1px solid var(--color-line-cool);
+    border-radius: 0;
+    background-color: var(--color-surface-strong);
+    background-image: none;
+    box-shadow: var(--shadow-soft);
+    -webkit-mask: none;
+    mask: none;
+}
+
+.route-blog .home-hero::before,
+.route-blog .home-hero::after,
+.route-blog-topic .home-hero::before,
+.route-blog-topic .home-hero::after,
+.route-blog-thread .home-hero::before,
+.route-blog-thread .home-hero::after,
+.route-blog .detail-panel::before,
+.route-blog .detail-panel::after,
+.route-blog-topic .detail-panel::before,
+.route-blog-topic .detail-panel::after,
+.route-blog-thread .detail-panel::before,
+.route-blog-thread .detail-panel::after,
+.route-blog .detail-summary::before,
+.route-blog .detail-summary::after,
+.route-blog-topic .detail-summary::before,
+.route-blog-topic .detail-summary::after,
+.route-blog-thread .detail-summary::before,
+.route-blog-thread .detail-summary::after,
+.route-blog .info-page-header::before,
+.route-blog .info-page-header::after,
+.route-blog-topic .info-page-header::before,
+.route-blog-topic .info-page-header::after,
+.route-blog-thread .info-page-header::before,
+.route-blog-thread .info-page-header::after {
+    display: none;
+}
+
 .forum-thread-card {
     display: grid;
     gap: 12px;
@@ -1596,13 +1666,23 @@ button:active,
 .comment-list {
     display: grid;
     gap: 12px;
+    width: min(100%, 720px);
+    margin-left: auto;
+    margin-right: auto;
+    justify-items: center;
 }
 
 .comment-list-nested {
-    margin-top: 16px;
+    width: 100%;
+    margin: 16px auto 0;
+    padding-top: 14px;
+    border-top: 1px solid rgba(130, 92, 38, 0.12);
 }
 
 .comment-item {
+    display: grid;
+    gap: 10px;
+    width: 100%;
     padding: 14px;
     border-radius: 8px;
     background: rgba(255, 253, 247, 0.86);
@@ -1610,16 +1690,26 @@ button:active,
 }
 
 .comment-item p {
-    margin: 0 0 8px;
+    max-width: 100%;
+    margin: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.65;
 }
 
 .comment-item small {
+    display: block;
     color: var(--color-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
 }
 
 .comment-item .comment-item {
-    margin-left: 28px;
-    background: rgba(255, 255, 255, 0.68);
+    width: min(100%, 580px);
+    margin-left: auto;
+    margin-right: auto;
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: none;
 }
 
 .comment-reply-box {
@@ -1641,32 +1731,42 @@ button:active,
 
 .comment-edit-box summary,
 .comment-reply-box summary {
-    cursor: pointer;
-    color: var(--color-teal);
-    font-weight: 700;
-}
-
-.comment-edit-box summary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 42px;
-    min-height: 42px;
-    padding: 0 12px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 8px 12px;
     border-radius: 8px;
-    color: #ffffff;
-    background: var(--color-teal);
+    background: rgba(224, 242, 239, 0.72);
+    cursor: pointer;
+    color: var(--color-teal);
+    font-weight: 700;
     list-style: none;
+    transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
 }
 
-.comment-edit-box summary::-webkit-details-marker {
+.comment-edit-box summary::-webkit-details-marker,
+.comment-reply-box summary::-webkit-details-marker {
     display: none;
 }
 
 .comment-edit-box summary:hover,
-.comment-edit-box summary:focus-visible {
-    background: var(--color-teal-dark);
+.comment-edit-box summary:focus-visible,
+.comment-reply-box summary:hover,
+.comment-reply-box summary:focus-visible {
+    background: var(--color-teal);
+    color: #ffffff;
     outline: none;
+    transform: translateY(-1px);
+}
+
+.comment-edit-box summary {
+    min-width: 42px;
+    min-height: 42px;
+    color: #ffffff;
+    background: var(--color-teal);
 }
 
 .comment-form-inline {
@@ -2141,6 +2241,22 @@ button:active,
     margin-bottom: 32px;
 }
 
+.route-deck-show .deck-section {
+    overflow: visible;
+    border: 1px solid var(--color-line-cool);
+    border-radius: 0;
+    background-color: var(--color-surface-strong);
+    background-image: none;
+    box-shadow: var(--shadow-soft);
+    -webkit-mask: none;
+    mask: none;
+}
+
+.route-deck-show .deck-section::before,
+.route-deck-show .deck-section::after {
+    display: none;
+}
+
 .deck-form-panel {
     overflow: visible;
     border: 1px solid var(--color-line);
@@ -2457,6 +2573,54 @@ button:active,
     .site-auth,
     .site-locale {
         justify-content: center;
+    }
+
+    .page section,
+    .page form,
+    .page .home-section,
+    .page .forum-layout,
+    .page .forum-section,
+    .page .deck-section,
+    .page .deck-show,
+    .page .info-page,
+    .page .notification-panel,
+    .page .admin-actions-panel {
+        justify-items: center;
+    }
+
+    .page button,
+    .page .card-detail-link,
+    .page .back-link,
+    .page .footer-donation-button,
+    .page .oauth-button,
+    .page .language-button,
+    .page .comment-danger-button {
+        margin-left: auto;
+        margin-right: auto;
+        justify-content: center;
+    }
+
+    .section-heading,
+    .collection-tools,
+    .filter-form,
+    .search-form,
+    .comment-actions,
+    .oauth-buttons,
+    .price-history-header,
+    .price-history-ranges,
+    .admin-action-list,
+    .card-tags,
+    .external-links,
+    .pagination {
+        align-items: center;
+        justify-content: center;
+    }
+
+    .comment-form button,
+    .admin-inline-form,
+    .deck-builder-result-card button,
+    .deck-builder-selected-card button {
+        justify-self: center;
     }
 
     .site-footer-grid,

@@ -28,7 +28,7 @@
 	</head>
 	<body>
 		{% include "_partials/_header.html.twig" %}
-		<main class="page">
+		<main class="page route-{{ app.request.attributes.get('_route')|default('page')|replace({'_': '-'}) }}">
 			{% for type, messages in app.flashes %}
 				{% for message in messages %}
 					<p class="message message-{{ type }}">{{ message }}</p>

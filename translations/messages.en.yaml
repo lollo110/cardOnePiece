@@ -323,7 +323,6 @@ footer:
     disclaimer: "Prices are indicative and may change over time."
   donation:
     title: Support the site
-    text: Help keep Pirate Card Blog online, improve the tools, and support new community features.
     button: Donate with PayPal
     configure: Contact me to support
     note: Donations are optional and help with hosting and development.

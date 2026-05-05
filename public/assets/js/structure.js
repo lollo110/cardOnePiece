@@ -768,7 +768,7 @@ const initializeStructure = () => {
         carousel.dataset.jsReady = 'true';
         const track = carousel.querySelector('[data-card-carousel-track]');
         const slides = Array.from(carousel.querySelectorAll('.card-carousel-slide'));
-        const hasPriceBadges = carousel.querySelector('.card-carousel-price') !== null;
+        const usesFlatSlides = carousel.querySelector('.card-carousel-price') !== null || carousel.classList.contains('card-carousel-recent');
         const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
 
         if (!(track instanceof HTMLElement) || slides.length <= 1) {
@@ -788,6 +788,7 @@ const initializeStructure = () => {
         let offset = 0;
         let lastFrame = null;
         let isPaused = false;
+        let pointerStart = null;
 
         const slideStep = () => {
             const currentSlides = Array.from(track.querySelectorAll('.card-carousel-slide'));
@@ -825,7 +826,7 @@ const initializeStructure = () => {
         };
 
         const updateDepth = () => {
-            if (hasPriceBadges) {
+            if (usesFlatSlides) {
                 Array.from(track.querySelectorAll('.card-carousel-slide')).forEach((slide) => {
                     if (!(slide instanceof HTMLElement)) {
                         return;
@@ -890,6 +891,31 @@ const initializeStructure = () => {
         carousel.addEventListener('mouseleave', resume);
         carousel.addEventListener('focusin', pause);
         carousel.addEventListener('focusout', resume);
+        carousel.addEventListener('pointerdown', (event) => {
+            pause();
+            pointerStart = {
+                x: event.clientX,
+                y: event.clientY,
+            };
+        });
+        carousel.addEventListener('pointerup', (event) => {
+            const slide = event.target instanceof Element ? event.target.closest('.card-carousel-slide') : null;
+            const link = slide?.querySelector('.card-carousel-link');
+
+            if (!(link instanceof HTMLAnchorElement) || event.target instanceof HTMLAnchorElement) {
+                pointerStart = null;
+                return;
+            }
+
+            const moved = pointerStart
+                ? Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y)
+                : 0;
+            pointerStart = null;
+
+            if (moved <= 8) {
+                window.location.href = link.href;
+            }
+        });
         window.addEventListener('resize', () => {
             const step = slideStep();
             offset = step > 0 ? offset % step : 0;
