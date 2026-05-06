@@ -954,7 +954,7 @@ button:active,
 .card-carousel {
     --carousel-gap: 24px;
     --carousel-card-width: 180px;
-    --carousel-visible: 4;
+    --carousel-visible: 6;
     max-width: calc((var(--carousel-card-width) * var(--carousel-visible)) + (var(--carousel-gap) * (var(--carousel-visible) - 1)) + 96px);
     margin: 0 auto;
     overflow: hidden;
@@ -995,11 +995,28 @@ button:active,
     align-items: center;
     flex-wrap: nowrap;
     gap: var(--carousel-gap);
-    transform: translate3d(var(--carousel-offset, 0), 0, 0);
+    width: max-content;
+    transform: translate3d(0, 0, 0);
     transition: none;
     will-change: transform;
     backface-visibility: hidden;
     transform-style: preserve-3d;
+    animation: card-carousel-scroll 42s linear infinite;
+}
+
+.card-carousel:hover .card-carousel-track,
+.card-carousel:focus-within .card-carousel-track {
+    animation-play-state: paused;
+}
+
+@keyframes card-carousel-scroll {
+    from {
+        transform: translate3d(0, 0, 0);
+    }
+
+    to {
+        transform: translate3d(calc(-50% - (var(--carousel-gap) / 2)), 0, 0);
+    }
 }
 
 .card-item {

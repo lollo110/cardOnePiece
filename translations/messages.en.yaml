@@ -359,19 +359,19 @@ site:
     section_2:
       title: Account questions
       paragraph_1: If you cannot sign in or access your account, first verify your login details on the sign in page.
-      paragraph_2: Before launch, this page should include the public contact email or support address used for account and privacy requests.
+      paragraph_2: For account, moderation, or privacy requests, contact lorenzo.cilurzo@piratecardblog.com.
   legal:
     title: Legal notice
     intro: This page presents the legal information relating to the publication and operation of Pirate Card Blog.
     section_1:
       title: Site publisher
       paragraph_1: "Site name: Pirate Card Blog."
-      paragraph_2: "Publication manager: the operator responsible for publishing and managing the site."
-      paragraph_3: Before the site goes online, this section should be completed with the real publisher identity, postal address, and contact details required for publication.
+      paragraph_2: "Publication manager: Lorenzo Paolo Cilurzo."
+      paragraph_3: "Contact: lorenzo.cilurzo@piratecardblog.com. Publisher postal address: 6 allée des champs fleuris, 94400 Vitry-sur-Seine, France."
     section_2:
       title: Hosting
-      paragraph_1: The production hosting provider must be identified with its company name, postal address, and contact details.
-      paragraph_2: If the hosting provider changes, this page should be updated so the information remains accurate and accessible.
+      paragraph_1: "Hosting provider: IONOS SE, Elgendorfer Str. 57, 56410 Montabaur, Germany."
+      paragraph_2: "Hosting contact: https://www.ionos.fr/contact."
     section_3:
       title: Intellectual property
       paragraph_1: The website structure, original editorial texts, and original community contributions are protected by the applicable intellectual property rules.
@@ -390,7 +390,7 @@ site:
     section_3:
       title: Your rights
       paragraph_1: Users may request access, correction, or deletion of their personal data, subject to legal or technical limits linked to account security and moderation history.
-      paragraph_2: Before launch, this page should include the contact channel used to handle privacy requests and exercise data protection rights.
+      paragraph_2: Privacy and data protection requests can be sent to lorenzo.cilurzo@piratecardblog.com.
     section_4:
       title: Advertising and external services
       paragraph_1: If advertising, analytics, or audience measurement tools are activated later, the privacy policy and cookie information should be updated before launch.

@@ -767,63 +767,13 @@ const initializeStructure = () => {
 
         carousel.dataset.jsReady = 'true';
         const track = carousel.querySelector('[data-card-carousel-track]');
-        const slides = Array.from(carousel.querySelectorAll('.card-carousel-slide'));
+        const slides = Array.from(carousel.querySelectorAll('.card-carousel-slide:not(.card-carousel-clone)'));
         const usesFlatSlides = carousel.querySelector('.card-carousel-price') !== null || carousel.classList.contains('card-carousel-recent');
-        const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
 
         if (!(track instanceof HTMLElement) || slides.length <= 1) {
             return;
         }
-
-        slides.forEach((slide) => {
-            const clone = slide.cloneNode(true);
-            clone.setAttribute('aria-hidden', 'true');
-            clone.dataset.carouselClone = 'true';
-            clone.querySelectorAll('a, button, input, textarea, select').forEach((element) => {
-                element.setAttribute('tabindex', '-1');
-            });
-            track.append(clone);
-        });
-
-        let offset = 0;
-        let lastFrame = null;
-        let isPaused = false;
         let pointerStart = null;
-
-        const slideStep = () => {
-            const currentSlides = Array.from(track.querySelectorAll('.card-carousel-slide'));
-            const firstSlide = currentSlides[0];
-            const secondSlide = currentSlides[1];
-
-            if (firstSlide instanceof HTMLElement && secondSlide instanceof HTMLElement) {
-                return secondSlide.offsetLeft - firstSlide.offsetLeft;
-            }
-
-            if (firstSlide instanceof HTMLElement) {
-                const style = window.getComputedStyle(track);
-                const gap = Number.parseFloat(style.columnGap || style.gap || '0');
-
-                return firstSlide.offsetWidth + (Number.isFinite(gap) ? gap : 0);
-            }
-
-            return 0;
-        };
-
-        const recyclePassedSlides = () => {
-            let step = slideStep();
-
-            while (step > 0 && offset >= step) {
-                offset -= step;
-                const firstSlide = track.querySelector('.card-carousel-slide');
-
-                if (!(firstSlide instanceof HTMLElement)) {
-                    return;
-                }
-
-                track.append(firstSlide);
-                step = slideStep();
-            }
-        };
 
         const updateDepth = () => {
             if (usesFlatSlides) {
@@ -859,40 +809,8 @@ const initializeStructure = () => {
             });
         };
 
-        const move = (timestamp) => {
-            if (lastFrame === null) {
-                lastFrame = timestamp;
-            }
-
-            const elapsed = timestamp - lastFrame;
-            lastFrame = timestamp;
-
-            if (!isPaused) {
-                offset += elapsed * 0.035;
-                recyclePassedSlides();
-                const renderedOffset = Math.round(offset * pixelRatio) / pixelRatio;
-                track.style.setProperty('--carousel-offset', `-${renderedOffset}px`);
-            }
-
-            updateDepth();
-            window.requestAnimationFrame(move);
-        };
-
-        const pause = () => {
-            isPaused = true;
-        };
-
-        const resume = () => {
-            isPaused = false;
-            lastFrame = null;
-        };
-
-        carousel.addEventListener('mouseenter', pause);
-        carousel.addEventListener('mouseleave', resume);
-        carousel.addEventListener('focusin', pause);
-        carousel.addEventListener('focusout', resume);
+        updateDepth();
         carousel.addEventListener('pointerdown', (event) => {
-            pause();
             pointerStart = {
                 x: event.clientX,
                 y: event.clientY,
@@ -916,15 +834,7 @@ const initializeStructure = () => {
                 window.location.href = link.href;
             }
         });
-        window.addEventListener('resize', () => {
-            const step = slideStep();
-            offset = step > 0 ? offset % step : 0;
-            const renderedOffset = Math.round(offset * pixelRatio) / pixelRatio;
-            track.style.setProperty('--carousel-offset', `-${renderedOffset}px`);
-            updateDepth();
-        });
-
-        window.requestAnimationFrame(move);
+        window.addEventListener('resize', updateDepth);
     });
 
     if (discussion && discussion.dataset.jsReady !== 'true') {

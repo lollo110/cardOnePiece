@@ -29,19 +29,19 @@ site:
     section_2:
       title: Questions de compte
       paragraph_1: Si vous ne pouvez pas vous connecter ou accéder à votre compte, vérifiez d’abord vos identifiants sur la page de connexion.
-      paragraph_2: Avant la mise en ligne, cette page devra contenir l’adresse e-mail publique ou le contact utilisé pour les demandes liées au compte et à la vie privée.
+      paragraph_2: Pour les demandes liées au compte, à la modération ou à la vie privée, contactez lorenzo.cilurzo@piratecardblog.com.
   legal:
     title: Mentions légales
     intro: Cette page présente les informations légales relatives à la publication et au fonctionnement de Pirate Card Blog.
     section_1:
       title: Éditeur du site
       paragraph_1: "Nom du site : Pirate Card Blog."
-      paragraph_2: "Responsable de publication : l’exploitant chargé de la publication et de la gestion du site."
-      paragraph_3: Avant la mise en ligne, cette section devra être complétée avec l’identité réelle de l’éditeur, son adresse postale et les coordonnées requises pour la publication.
+      paragraph_2: "Responsable de publication : Lorenzo Paolo Cilurzo."
+      paragraph_3: "Contact : lorenzo.cilurzo@piratecardblog.com. Adresse postale de l’éditeur : 6 allée des champs fleuris, 94400 Vitry-sur-Seine, France."
     section_2:
       title: Hébergement
-      paragraph_1: L’hébergeur de production doit être identifié avec son nom, son adresse postale et ses coordonnées.
-      paragraph_2: Si l’hébergeur change, cette page devra être mise à jour afin que les informations restent exactes et accessibles.
+      paragraph_1: "Hébergeur : IONOS SE, Elgendorfer Str. 57, 56410 Montabaur, Allemagne."
+      paragraph_2: "Contact de l’hébergeur : https://www.ionos.fr/contact."
     section_3:
       title: Propriété intellectuelle
       paragraph_1: La structure du site, les textes éditoriaux originaux et les contributions communautaires originales sont protégés par les règles applicables en matière de propriété intellectuelle.
@@ -60,7 +60,7 @@ site:
     section_3:
       title: Vos droits
       paragraph_1: Les utilisateurs peuvent demander l’accès, la correction ou la suppression de leurs données personnelles, sous réserve des limites légales ou techniques liées à la sécurité du compte et à l’historique de modération.
-      paragraph_2: Avant la mise en ligne, cette page devra indiquer le canal de contact utilisé pour traiter les demandes liées à la vie privée et à l’exercice des droits.
+      paragraph_2: Les demandes liées à la vie privée et à la protection des données peuvent être envoyées à lorenzo.cilurzo@piratecardblog.com.
     section_4:
       title: Publicite et services externes
       paragraph_1: Si des outils de publicite, d'analyse ou de mesure d'audience sont actives plus tard, la politique de confidentialite et la page cookies devront etre mises a jour avant leur activation.
